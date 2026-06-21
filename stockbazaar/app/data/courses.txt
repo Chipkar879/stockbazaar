@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "title": "Module 1: What is a Stock?",
+    "duration": "10 mins",
+    "status": "Completed",
+    "contentType": "text",
+    "content": "A stock represents a tiny piece of ownership in a company. When you buy a share of a company like Apple or Reliance, you become a shareholder! Businesses sell stocks to raise money to grow, and you profit if the company succeeds.",
+    "activity": "Write down 3 public companies you interact with daily."
+  },
+  {
+    "id": 2,
+    "title": "Module 2: Risk & Diversification",
+    "duration": "15 mins",
+    "status": "In Progress",
+    "contentType": "video",
+    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "content": "Diversification means spreading your money across different investments so one bad event won't erase your savings. Think of it as not putting all your eggs in one single basket.",
+    "activity": "Try out the Quick Quiz on the right side of your dashboard to test your diversification understanding!"
+  }
+]
