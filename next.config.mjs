@@ -1,12 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // We removed "output: 'export'" so your /api/stock route can run flawlessly on Vercel!
   images: {
     unoptimized: true,
   },
-  // This tells Next.js to export pages as /courses/index.html instead of /courses.html
-  // It fixes routing glitches on static hosts like GitHub Pages!
-  trailingSlash: true, 
 };
 
 export default nextConfig;
