@@ -243,39 +243,40 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CAMPUS DEPLOYMENT METRICS BANNER */}
-      <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
-        <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
-          
-          {/* SECURE CLICKABLE WATERMARK LINK ROUTING TO LOGIN PAGE */}
-          <Link 
-            href="/login" 
-            className="absolute right-4 bottom-2 text-white/5 font-mono font-black text-7xl md:text-9xl tracking-tighter select-none z-30 cursor-pointer transition-all duration-300 hover:text-[#4F8EF7]/40 hover:scale-105 block"
-            title="Go to Login"
-          >
-            SB
-          </Link>
+    {/* CAMPUS DEPLOYMENT METRICS BANNER */}
+    <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
+      <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
+        
+        {/* DYNAMIC SHORTCUT TARGETING SIGNUP */}
+        <Link 
+          href="/signup" 
+          className="absolute right-6 bottom-6 text-white/5 hover:text-[#4F8EF7]/40 font-mono font-black text-6xl md:text-8xl tracking-tighter select-none cursor-pointer transition-all duration-300 transform hover:scale-110 block z-50 pointer-events-auto p-4"
+          style={{ display: 'block', minWidth: '100px', minHeight: '80px', textAlign: 'right' }}
+          title="Go to Signup"
+        >
+          SB
+        </Link>
 
-          <div className="space-y-3 max-w-xl text-center md:text-left z-10">
-            <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
-              Campus Classroom Access
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
-            <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
-              Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
-            </p>
-          </div>
-
-          <div className="w-full md:w-auto z-10 flex justify-center">
-            <Link
-              href="/pricing"
-              className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
-            >
-              Setup Institutional Trial Token
-            </Link>
-          </div>
+        <div className="space-y-3 max-w-xl text-center md:text-left z-10">
+          <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
+            Campus Classroom Access
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
+          <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
+            Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
+          </p>
         </div>
-      </section>
+
+        <div className="w-full md:w-auto z-10 flex justify-center">
+          <Link
+            href="/pricing"
+            className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
+          >
+            Setup Institutional Trial Token
+          </Link>
+        </div>
+      </div>
+    </section>
     </main>
   );
 }
