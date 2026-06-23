@@ -3,22 +3,24 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { useState, useEffect } from 'react';
 
-// Re-usable animated asset component to rain down 10 unique asset categories cleanly in the background
-const RainingAsset = ({ icon }) => {
+// Re-usable animated asset component to rain down unique asset categories cleanly
+const RainingAsset = ({ icon, isMobileHidden }) => {
   const [style, setStyle] = useState({});
 
   useEffect(() => {
     setStyle({
-      left: `${Math.random() * 95}%`,
-      animationDuration: `${Math.random() * 5 + 4}s`, // Float speed between 4s and 9s
-      animationDelay: `${Math.random() * 6}s`,        // Varied spawn delay
-      fontSize: `${Math.random() * 18 + 14}px`,       // Size range from 14px to 32px
+      left: `${Math.random() * 92 + 3}%`, // Keeps icons slightly away from the absolute screen edges
+      animationDuration: `${Math.random() * 5 + 5}s`, // Slightly slower speed (5s to 10s) for a smoother look
+      animationDelay: `${Math.random() * 7}s`,        // Spaced out delays
+      fontSize: `${Math.random() * 12 + 14}px`,       // Mobile-friendly size variance (14px to 26px)
     });
   }, []);
 
   return (
     <div
-      className="absolute top-[-5vh] text-slate-300/40 pointer-events-none select-none animate-rainDown"
+      className={`absolute top-[-5vh] text-slate-300/30 pointer-events-none select-none animate-rainDown ${
+        isMobileHidden ? 'hidden md:block' : ''
+      }`}
       style={style}
     >
       {icon}
@@ -39,8 +41,13 @@ export default function Home() {
       {/* BACKGROUND FLOATING RAIN LAYER */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {ASSET_TYPES.map((asset, typeIdx) => 
-          [...Array(10)].map((_, itemIdx) => (
-            <RainingAsset key={`asset-${typeIdx}-${itemIdx}`} icon={asset} />
+          // We limit the loops: items 0-2 run everywhere, items 3-5 are hidden on small mobile views
+          [...Array(6)].map((_, itemIdx) => (
+            <RainingAsset 
+              key={`asset-${typeIdx}-${itemIdx}`} 
+              icon={asset} 
+              isMobileHidden={itemIdx >= 2} // Restricts mobile to only 2 particles per asset class (20 total particles)
+            />
           ))
         )}
       </div>
