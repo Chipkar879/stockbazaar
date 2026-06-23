@@ -10,10 +10,10 @@ const RainingAsset = ({ icon, isMobileHidden }) => {
 
   useEffect(() => {
     setStyle({
-      left: `${Math.random() * 92 + 3}%`,
-      animationDuration: `${Math.random() * 5 + 5}s`,
-      animationDelay: `${Math.random() * 7}s`,
-      fontSize: `${Math.random() * 12 + 14}px`,
+      left: `${Math.random() * 92 + 3}%`, // Keeps icons slightly away from the absolute screen edges
+      animationDuration: `${Math.random() * 5 + 5}s`, // Slightly slower speed (5s to 10s) for a smoother look
+      animationDelay: `${Math.random() * 7}s`,        // Spaced out delays
+      fontSize: `${Math.random() * 12 + 14}px`,       // Mobile-friendly size variance (14px to 26px)
     });
   }, []);
 
@@ -70,11 +70,12 @@ export default function Home() {
       {/* BACKGROUND FLOATING RAIN LAYER */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {ASSET_TYPES.map((asset, typeIdx) => 
+          // We limit the loops: items 0-2 run everywhere, items 3-5 are hidden on small mobile views
           [...Array(6)].map((_, itemIdx) => (
             <RainingAsset 
               key={`asset-${typeIdx}-${itemIdx}`} 
               icon={asset} 
-              isMobileHidden={itemIdx >= 2}
+              isMobileHidden={itemIdx >= 2} // Restricts mobile to only 2 particles per asset class (20 total particles)
             />
           ))
         )}
@@ -107,14 +108,14 @@ export default function Home() {
               Syncing Terminal...
             </div>
           ) : !user ? (
-            /* STATE A: ORIGINAL HOMEPAGE ACTION LINK BUTTONS FOR GUESTS */
+            /* CONDITIONAL RENDER STATE A: SHOW ORIGINAL ACTION LINK BUTTONS FOR GUESTS */
             <>
               <Link
                 href="/signup"
                 className="bg-[#4F8EF7] text-white font-poppins font-black px-10 py-4 rounded-2xl text-sm shadow-xl shadow-blue-200 hover:bg-[#3b7add] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
               >
                 <span className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-[-20deg]" />
-                Create StockBazaar Account
+                Claim Your Sandbox Wallet
               </Link>
               <Link
                 href="/pricing"
@@ -124,7 +125,7 @@ export default function Home() {
               </Link>
             </>
           ) : (
-            /* STATE B: SHOW LIVE SANDBOX PROFILE WALLET INLINE ONCE LOGGED IN */
+            /* CONDITIONAL RENDER STATE B: SHOW LIVE SANDBOX PROFILE WALLET ONCE ACTIVE USER IS LOGGED IN */
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 text-left shadow-md space-y-4 animate-fadeInFast">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
@@ -136,7 +137,7 @@ export default function Home() {
                 </span>
               </div>
               
-              <div className="bg-gradient-to-br from-[#4F8EF7] to-[#34D399] p-4 rounded-xl text-white shadow-sm space-y-1">
+              <div className="bg-gradient-to-br from-[#4F8EF7] to-[#3b7add] p-4 rounded-xl text-white shadow-sm space-y-1">
                 <p className="text-[9px] font-black uppercase tracking-wider text-blue-100/80">Available Sandbox Balance</p>
                 <p className="text-2xl font-poppins font-black tracking-tight">
                   ₹{(profile?.wallet_balance || 50000).toLocaleString('en-IN')}
@@ -145,7 +146,7 @@ export default function Home() {
 
               <div className="flex gap-2 items-center justify-between pt-1">
                 <div className="text-[10px] text-slate-400 font-medium truncate max-w-[65%]">
-                  Account ID: <span className="font-mono text-slate-600">{user.email}</span>
+                  ID: <span className="font-mono text-slate-600">{user.email}</span>
                 </div>
                 <button
                   onClick={async () => {
@@ -170,6 +171,8 @@ export default function Home() {
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm w-full max-w-4xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          
+          {/* Ticker Nav Selection controls */}
           <div className="col-span-1 space-y-3">
             <div className="text-[11px] font-black uppercase text-slate-400 tracking-wider px-1">Select Live Stream Desk:</div>
             <button
@@ -188,18 +191,22 @@ export default function Home() {
             </button>
           </div>
 
+          {/* Visual Terminal Workspace Container */}
           <div className="col-span-2 bg-[#0f111a] border border-slate-900 rounded-2xl p-6 font-sans text-slate-200 relative overflow-hidden group min-h-[250px] flex flex-col justify-between shadow-inner">
+            
             {activeTab === 'stocks' && (
               <div className="space-y-4 animate-fadeInFast w-full">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md tracking-wider">RELIANCE.NS • NSE LIVE</span>
                   <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">● Exchange Open</span>
                 </div>
+                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Market Price</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹1,309.35</div>
                   <div className="text-xs font-bold text-emerald-400 font-mono">+₹12.40 (+0.95%)</div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-400">
                   <div>Prev Close: <span className="text-white font-bold">₹1,296.95</span></div>
                   <div>Day Volume: <span className="text-white font-bold">4.2M Shares</span></div>
@@ -213,17 +220,20 @@ export default function Home() {
                   <span className="text-xs font-black bg-purple-950/40 text-purple-300 px-2.5 py-1 rounded-md tracking-wider border border-purple-900/40">TECH.CHALLENGE • HIGH-BETA</span>
                   <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md animate-pulse">⚡ Arena Ticking</span>
                 </div>
+                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Simulated Price Scale</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹12,500.00</div>
                   <div className="text-xs font-bold text-rose-500 font-mono">-₹2,500.00 (-20.00%)</div>
                 </div>
+
                 <div className="p-2.5 bg-rose-500/5 border border-rose-500/10 rounded-xl text-[11px] text-rose-400 leading-relaxed font-semibold">
                   📢 System Event Broadcast: Tech sector crash initiated! TECH drops 20% over current challenge lifecycle step.
                 </div>
               </div>
             )}
 
+            {/* Micro background design curve vectors */}
             <div className="absolute bottom-0 inset-x-0 h-24 opacity-10 pointer-events-none -z-10">
               <svg viewBox="0 0 400 120" preserveAspectRatio="none" className="w-full h-full fill-none stroke-current text-slate-400">
                 <path d="M0,120 L20,90 L50,110 L100,20 L150,80 L200,10 L250,90 L300,40 L350,110 L400,10" strokeWidth="2" strokeLinecap="round" />
@@ -233,39 +243,39 @@ export default function Home() {
         </div>
       </section>
 
-    {/* CAMPUS DEPLOYMENT METRICS BANNER */}
-    <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
-      <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
-        
-        {/* CLICKABLE "SB" TEXT LINKING TO LOGIN */}
-        <Link 
-          href="/login" 
-          className="absolute right-0 bottom-0 text-white/5 font-mono font-black text-9xl tracking-tighter select-none translate-x-10 translate-y-10 group-hover:translate-x-5 group-hover:translate-y-5 transition-transform duration-700 cursor-pointer hover:text-[#4F8EF7]/20 z-20"
-          title="Go to Login"
-        >
-          SB
-        </Link>
-
-        <div className="space-y-3 max-w-xl text-center md:text-left z-10">
-          <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
-            Campus Classroom Access
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
-          <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
-            Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
-          </p>
-        </div>
-
-        <div className="w-full md:w-auto z-10 flex justify-center">
-          <Link
-            href="/pricing"
-            className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
+      {/* CAMPUS DEPLOYMENT METRICS BANNER */}
+      <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
+        <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
+          
+          {/* SECURE CLICKABLE WATERMARK LINK ROUTING TO LOGIN PAGE */}
+          <Link 
+            href="/login" 
+            className="absolute right-4 bottom-2 text-white/5 font-mono font-black text-7xl md:text-9xl tracking-tighter select-none z-30 cursor-pointer transition-all duration-300 hover:text-[#4F8EF7]/40 hover:scale-105 block"
+            title="Go to Login"
           >
-            Setup Institutional Trial Token
+            SB
           </Link>
+
+          <div className="space-y-3 max-w-xl text-center md:text-left z-10">
+            <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
+              Campus Classroom Access
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
+            <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
+              Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
+            </p>
+          </div>
+
+          <div className="w-full md:w-auto z-10 flex justify-center">
+            <Link
+              href="/pricing"
+              className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
+            >
+              Setup Institutional Trial Token
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </main>
   );
 }
