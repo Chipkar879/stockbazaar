@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 
 export default function Signup() {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [accountType, setAccountType] = useState('personal'); // Tracks 'personal', 'student', or 'teacher'
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', schoolCode: '' });
   const [status, setStatus] = useState({ loading: false, message: '', success: false });
 
   const handleSubmit = async (e) => {
@@ -15,14 +16,23 @@ export default function Signup() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: accountType,
+          schoolCode: accountType !== 'personal' ? formData.schoolCode : null
+        }),
       });
       
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
 
-      setStatus({ loading: false, message: 'Account created! Redirecting to simulator...', success: true });
-      // Here you can redirect them to /simulator or /dashboard after a brief delay
+      setStatus({ 
+        loading: false, 
+        message: 'Account active! Check your inbox for a secure verification link.', 
+        success: true 
+      });
     } catch (err) {
       setStatus({ loading: false, message: err.message, success: false });
     }
@@ -32,11 +42,36 @@ export default function Signup() {
     <main className="min-h-screen bg-[#f5f7ff] text-[#1e1b4b] antialiased">
       <Navbar />
       
-      <section className="max-w-md mx-auto px-6 pt-20 pb-12">
+      <section className="max-w-md mx-auto px-6 pt-16 pb-12">
         <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="font-poppins font-black text-2xl text-slate-950">Create Your Arena Wallet</h1>
-            <p className="text-xs text-slate-500">Get ₹10,000,000 in virtual sandbox chips instantly.</p>
+            <h1 className="font-poppins font-black text-2xl text-slate-950">Create Your Wallet</h1>
+            <p className="text-xs text-slate-500">Get ₹50,000 in virtual sandbox chips instantly.</p>
+          </div>
+
+          {/* TRIPLE TRACK ONBOARDING CONTROLLER */}
+          <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setAccountType('personal')}
+              className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${accountType === 'personal' ? 'bg-white text-[#4F8EF7] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Personal
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType('student')}
+              className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${accountType === 'student' ? 'bg-white text-[#4F8EF7] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType('teacher')}
+              className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${accountType === 'teacher' ? 'bg-white text-[#4F8EF7] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Teacher
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -59,6 +94,19 @@ export default function Signup() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
+
+            {/* CONDITIONAL FIELD FOR INSTITUTION CODES */}
+            {accountType !== 'personal' && (
+              <div className="animate-fadeInFast">
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1.5 text-[#4F8EF7]">School Institutional Access Code</label>
+                <input 
+                  type="text" required
+                  className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-sm focus:outline-none focus:border-[#4F8EF7] font-mono placeholder:font-sans"
+                  placeholder="e.g. CAMPUS-2026"
+                  onChange={(e) => setFormData({ ...formData, schoolCode: e.target.value })}
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1.5">Security Password</label>
@@ -91,4 +139,4 @@ export default function Signup() {
       </section>
     </main>
   );
-}
+}  
