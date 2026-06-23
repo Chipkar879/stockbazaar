@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 
 export default function Signup() {
-  const [accountType, setAccountType] = useState('personal'); // Tracks 'personal', 'student', or 'teacher'
+  const [accountType, setAccountType] = useState('personal');
   const [formData, setFormData] = useState({ name: '', email: '', password: '', schoolCode: '' });
   const [status, setStatus] = useState({ loading: false, message: '', success: false });
 
@@ -30,7 +30,7 @@ export default function Signup() {
 
       setStatus({ 
         loading: false, 
-        message: 'Account active! Check your inbox for a secure verification link.', 
+        message: 'StockBazaar account active! Check your email for verification link.', 
         success: true 
       });
     } catch (err) {
@@ -45,11 +45,10 @@ export default function Signup() {
       <section className="max-w-md mx-auto px-6 pt-16 pb-12">
         <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="font-poppins font-black text-2xl text-slate-950">Create Your Wallet</h1>
-            <p className="text-xs text-slate-500">Get ₹50,000 in virtual sandbox chips instantly.</p>
+            <h1 className="font-poppins font-black text-2xl text-slate-950">Create StockBazaar Account</h1>
+            <p className="text-xs text-slate-500">Get ₹50,000 in virtual sandbox cash instantly.</p>
           </div>
 
-          {/* TRIPLE TRACK ONBOARDING CONTROLLER */}
           <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
             <button
               type="button"
@@ -80,7 +79,7 @@ export default function Signup() {
               <input 
                 type="text" required
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#4F8EF7]"
-                placeholder="Alex Mercer"
+                placeholder="Full Name"
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
@@ -90,19 +89,18 @@ export default function Signup() {
               <input 
                 type="email" required
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#4F8EF7]"
-                placeholder="alex@campus.edu"
+                placeholder="email@example.com"
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
 
-            {/* CONDITIONAL FIELD FOR INSTITUTION CODES */}
             {accountType !== 'personal' && (
               <div className="animate-fadeInFast">
-                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1.5 text-[#4F8EF7]">School Institutional Access Code</label>
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1.5 text-[#4F8EF7]">Campus Institutional Access Code</label>
                 <input 
                   type="text" required
-                  className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-sm focus:outline-none focus:border-[#4F8EF7] font-mono placeholder:font-sans"
-                  placeholder="e.g. CAMPUS-2026"
+                  className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-sm focus:outline-none focus:border-[#4F8EF7] font-mono"
+                  placeholder="e.g. CAMPUS-CODE"
                   onChange={(e) => setFormData({ ...formData, schoolCode: e.target.value })}
                 />
               </div>
@@ -128,7 +126,7 @@ export default function Signup() {
               type="submit" disabled={status.loading}
               className="w-full py-4 bg-[#4F8EF7] text-white font-poppins font-black rounded-xl text-sm shadow-md hover:bg-[#3b7add] transition-all disabled:opacity-50"
             >
-              {status.loading ? 'Deploying Credentials...' : 'Open Free Sandbox Account'}
+              {status.loading ? 'Setting up account...' : 'Create StockBazaar Account'}
             </button>
           </form>
 
@@ -139,4 +137,4 @@ export default function Signup() {
       </section>
     </main>
   );
-}  
+}
