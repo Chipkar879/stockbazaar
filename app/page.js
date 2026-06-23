@@ -70,12 +70,11 @@ export default function Home() {
       {/* BACKGROUND FLOATING RAIN LAYER */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {ASSET_TYPES.map((asset, typeIdx) => 
-          // We limit the loops: items 0-2 run everywhere, items 3-5 are hidden on small mobile views
           [...Array(6)].map((_, itemIdx) => (
             <RainingAsset 
               key={`asset-${typeIdx}-${itemIdx}`} 
               icon={asset} 
-              isMobileHidden={itemIdx >= 2} // Restricts mobile to only 2 particles per asset class (20 total particles)
+              isMobileHidden={itemIdx >= 2} 
             />
           ))
         )}
@@ -108,7 +107,7 @@ export default function Home() {
               Syncing Terminal...
             </div>
           ) : !user ? (
-            /* CONDITIONAL RENDER STATE A: SHOW ORIGINAL ACTION LINK BUTTONS FOR GUESTS */
+            /* STATE A: GUEST NAVIGATION AND NEW ACTIONS ROW */
             <>
               <Link
                 href="/signup"
@@ -125,7 +124,7 @@ export default function Home() {
               </Link>
             </>
           ) : (
-            /* CONDITIONAL RENDER STATE B: SHOW LIVE SANDBOX PROFILE WALLET ONCE ACTIVE USER IS LOGGED IN */
+            /* STATE B: PROFILE WALLET DISPLAY */
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 text-left shadow-md space-y-4 animate-fadeInFast">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
@@ -171,8 +170,6 @@ export default function Home() {
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm w-full max-w-4xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          
-          {/* Ticker Nav Selection controls */}
           <div className="col-span-1 space-y-3">
             <div className="text-[11px] font-black uppercase text-slate-400 tracking-wider px-1">Select Live Stream Desk:</div>
             <button
@@ -191,22 +188,18 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Visual Terminal Workspace Container */}
           <div className="col-span-2 bg-[#0f111a] border border-slate-900 rounded-2xl p-6 font-sans text-slate-200 relative overflow-hidden group min-h-[250px] flex flex-col justify-between shadow-inner">
-            
             {activeTab === 'stocks' && (
               <div className="space-y-4 animate-fadeInFast w-full">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md tracking-wider">RELIANCE.NS • NSE LIVE</span>
                   <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">● Exchange Open</span>
                 </div>
-                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Market Price</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹1,309.35</div>
                   <div className="text-xs font-bold text-emerald-400 font-mono">+₹12.40 (+0.95%)</div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-400">
                   <div>Prev Close: <span className="text-white font-bold">₹1,296.95</span></div>
                   <div>Day Volume: <span className="text-white font-bold">4.2M Shares</span></div>
@@ -220,20 +213,16 @@ export default function Home() {
                   <span className="text-xs font-black bg-purple-950/40 text-purple-300 px-2.5 py-1 rounded-md tracking-wider border border-purple-900/40">TECH.CHALLENGE • HIGH-BETA</span>
                   <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md animate-pulse">⚡ Arena Ticking</span>
                 </div>
-                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Simulated Price Scale</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹12,500.00</div>
                   <div className="text-xs font-bold text-rose-500 font-mono">-₹2,500.00 (-20.00%)</div>
                 </div>
-
                 <div className="p-2.5 bg-rose-500/5 border border-rose-500/10 rounded-xl text-[11px] text-rose-400 leading-relaxed font-semibold">
                   📢 System Event Broadcast: Tech sector crash initiated! TECH drops 20% over current challenge lifecycle step.
                 </div>
               </div>
             )}
-
-            {/* Micro background design curve vectors */}
             <div className="absolute bottom-0 inset-x-0 h-24 opacity-10 pointer-events-none -z-10">
               <svg viewBox="0 0 400 120" preserveAspectRatio="none" className="w-full h-full fill-none stroke-current text-slate-400">
                 <path d="M0,120 L20,90 L50,110 L100,20 L150,80 L200,10 L250,90 L300,40 L350,110 L400,10" strokeWidth="2" strokeLinecap="round" />
@@ -243,40 +232,40 @@ export default function Home() {
         </div>
       </section>
 
-    {/* CAMPUS DEPLOYMENT METRICS BANNER */}
-    <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
-      <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
-        
-        {/* DYNAMIC SHORTCUT TARGETING SIGNUP */}
-        <Link 
-          href="/signup" 
-          className="absolute right-6 bottom-6 text-white/5 hover:text-[#4F8EF7]/40 font-mono font-black text-6xl md:text-8xl tracking-tighter select-none cursor-pointer transition-all duration-300 transform hover:scale-110 block z-50 pointer-events-auto p-4"
-          style={{ display: 'block', minWidth: '100px', minHeight: '80px', textAlign: 'right' }}
-          title="Go to Signup"
-        >
-          SB
-        </Link>
+      {/* CAMPUS DEPLOYMENT METRICS BANNER WITH CLEAR REGISTRATION AND LOGIN OPTIONS */}
+      <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
+        <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
+          <div className="absolute right-0 bottom-0 text-white/5 font-mono font-black text-9xl tracking-tighter pointer-events-none select-none translate-x-10 translate-y-10 group-hover:translate-x-5 group-hover:translate-y-5 transition-transform duration-700">
+            SB
+          </div>
 
-        <div className="space-y-3 max-w-xl text-center md:text-left z-10">
-          <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
-            Campus Classroom Access
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
-          <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
-            Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
-          </p>
-        </div>
+          <div className="space-y-3 max-w-xl text-center md:text-left z-10">
+            <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
+              Campus Classroom Access
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
+            <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
+              Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
+            </p>
+          </div>
 
-        <div className="w-full md:w-auto z-10 flex justify-center">
-          <Link
-            href="/pricing"
-            className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
-          >
-            Setup Institutional Trial Token
-          </Link>
+          {/* PARALLEL ACTION BUTTON BLOCK: SIGNUP NEXT TO ACCESS OPTION */}
+          <div className="w-full md:w-auto z-10 flex flex-col sm:flex-row items-center gap-4 justify-center">
+            <Link
+              href="/signup"
+              className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 transition-all text-center w-full sm:w-auto whitespace-nowrap"
+            >
+              Setup Institutional Trial Token
+            </Link>
+            <Link
+              href="/signup?mode=login"
+              className="px-6 py-4 bg-white/10 border border-white/20 text-white hover:bg-white/20 text-xs font-black uppercase tracking-wider rounded-xl transform hover:-translate-y-0.5 transition-all text-center w-full sm:w-auto whitespace-nowrap"
+            >
+              Existing Trader Login
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </main>
   );
 }
