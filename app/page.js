@@ -233,31 +233,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CAMPUS DEPLOYMENT METRICS BANNER */}
-      <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
-        <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
-          <div className="absolute right-0 bottom-0 text-white/5 font-mono font-black text-9xl tracking-tighter pointer-events-none select-none translate-x-10 translate-y-10 group-hover:translate-x-5 group-hover:translate-y-5 transition-transform duration-700">
-            StockBazaar
-          </div>
-          <div className="space-y-3 max-w-xl text-center md:text-left z-10">
-            <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
-              Campus Classroom Access
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
-            <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
-              Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
-            </p>
-          </div>
-          <div className="w-full md:w-auto z-10 flex justify-center">
-            <Link
-              href="/pricing"
-              className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
-            >
-              Setup Institutional Trial Token
-            </Link>
-          </div>
+    {/* CAMPUS DEPLOYMENT METRICS BANNER */}
+    <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
+      <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
+        
+        {/* CLICKABLE "SB" TEXT LINKING TO LOGIN */}
+        <Link 
+          href="/login" 
+          className="absolute right-0 bottom-0 text-white/5 font-mono font-black text-9xl tracking-tighter select-none translate-x-10 translate-y-10 group-hover:translate-x-5 group-hover:translate-y-5 transition-transform duration-700 cursor-pointer hover:text-[#4F8EF7]/20 z-20"
+          title="Go to Login"
+        >
+          SB
+        </Link>
+
+        <div className="space-y-3 max-w-xl text-center md:text-left z-10">
+          <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
+            Campus Classroom Access
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">Launch Custom Classroom Tournaments</h2>
+          <p className="text-slate-300 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
+            Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
+          </p>
         </div>
-      </section>
+
+        <div className="w-full md:w-auto z-10 flex justify-center">
+          <Link
+            href="/pricing"
+            className="px-6 py-4 bg-white text-slate-900 hover:bg-slate-50 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transform hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap"
+          >
+            Setup Institutional Trial Token
+          </Link>
+        </div>
+      </div>
+    </section>
     </main>
   );
 }
