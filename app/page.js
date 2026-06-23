@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 // Re-usable animated asset component to rain down unique asset categories cleanly
 const RainingAsset = ({ icon, isMobileHidden }) => {
@@ -30,6 +31,34 @@ const RainingAsset = ({ icon, isMobileHidden }) => {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('stocks'); 
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Sync state with active user sessions and visual cloud profiles
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          if (!error && data) {
+            setProfile(data);
+          }
+        }
+      } catch (err) {
+        console.error("Session sync fault:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkUser();
+  }, []);
 
   // The 10 distinct stock and financial assets to populate our raining background matrix
   const ASSET_TYPES = ['₹', '$', '🚀', '📈', '📉', '₿', '📊', '💼', '💳', '💎'];
@@ -72,21 +101,65 @@ export default function Home() {
           </p>
         </div>
 
-        {/* INTERACTIVE ACTIONS HUB */}
+        {/* INTERACTIVE ACTIONS HUB WITH INTEGRATED AUTH CONDITIONS */}
         <div className="flex flex-wrap justify-center items-center gap-4 pt-4 animate-scaleUp">
-          <Link
-            href="/simulator"
-            className="bg-[#4F8EF7] text-white font-poppins font-black px-10 py-4 rounded-2xl text-sm shadow-xl shadow-blue-200 hover:bg-[#3b7add] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
-          >
-            <span className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-[-20deg]" />
-            Claim Your Sandbox Wallet
-          </Link>
-          <Link
-            href="/pricing"
-            className="bg-white border-2 border-slate-200 text-slate-700 font-poppins font-black px-10 py-4 rounded-2xl text-sm hover:border-slate-400 hover:text-slate-950 hover:-translate-y-1 transition-all"
-          >
-            Free 7-Day Trial
-          </Link>
+          {loading ? (
+            <div className="px-10 py-4 bg-slate-200 text-slate-400 rounded-2xl text-sm font-bold animate-pulse">
+              Syncing Terminal...
+            </div>
+          ) : !user ? (
+            /* CONDITIONAL RENDER STATE A: SHOW ORIGINAL ACTION LINK BUTTONS FOR GUESTS */
+            <>
+              <Link
+                href="/signup"
+                className="bg-[#4F8EF7] text-white font-poppins font-black px-10 py-4 rounded-2xl text-sm shadow-xl shadow-blue-200 hover:bg-[#3b7add] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
+              >
+                <span className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-[-20deg]" />
+                Claim Your Sandbox Wallet
+              </Link>
+              <Link
+                href="/pricing"
+                className="bg-white border-2 border-slate-200 text-slate-700 font-poppins font-black px-10 py-4 rounded-2xl text-sm hover:border-slate-400 hover:text-slate-950 hover:-translate-y-1 transition-all"
+              >
+                Free 7-Day Trial
+              </Link>
+            </>
+          ) : (
+            /* CONDITIONAL RENDER STATE B: SHOW LIVE SANDBOX PROFILE WALLET ONCE ACTIVE USER IS LOGGED IN */
+            <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 text-left shadow-md space-y-4 animate-fadeInFast">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Active Trader</p>
+                  <h3 className="text-base font-poppins font-black text-slate-950">{profile?.name || 'Simulator Account'}</h3>
+                </div>
+                <span className="px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-black uppercase tracking-wider text-slate-500">
+                  {profile?.role || 'Personal'} Sandbox
+                </span>
+              </div>
+              
+              <div className="bg-gradient-to-br from-[#4F8EF7] to-[#3b7add] p-4 rounded-xl text-white shadow-sm space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-wider text-blue-100/80">Available Sandbox Balance</p>
+                <p className="text-2xl font-poppins font-black tracking-tight">
+                  ₹{(profile?.wallet_balance || 50000).toLocaleString('en-IN')}
+                </p>
+              </div>
+
+              <div className="flex gap-2 items-center justify-between pt-1">
+                <div className="text-[10px] text-slate-400 font-medium truncate max-w-[65%]">
+                  ID: <span className="font-mono text-slate-600">{user.email}</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    window.location.reload();
+                  }}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600 text-[10px] font-bold rounded-lg transition-all"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
