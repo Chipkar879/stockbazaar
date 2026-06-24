@@ -71,9 +71,9 @@ export default function Navbar() {
         {/* Center: Navigation Layout Items */}
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-500">
           <Link href="/" className="text-blue-500 border-b-2 border-blue-500 pb-0.5 transition-all">Home</Link>
-          <Link href="/#simulator" className="hover:text-slate-900 transition-all">Simulator</Link>
-          <Link href="/#courses" className="hover:text-slate-900 transition-all">Courses</Link>
-          <Link href="/#pricing" className="hover:text-slate-900 transition-all">Pricing</Link>
+          <Link href="/simulator" className="hover:text-slate-900 transition-all">Simulator</Link>
+          <Link href="/courses" className="hover:text-slate-900 transition-all">Courses</Link>
+          <Link href="/pricing" className="hover:text-slate-900 transition-all">Pricing</Link>
         </nav>
 
         {/* Right Side: Contextual Auth Avatar / Signup Call to Action */}
