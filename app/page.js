@@ -11,7 +11,7 @@ const RainingAsset = ({ icon, isMobileHidden }) => {
   useEffect(() => {
     setStyle({
       left: `${Math.random() * 92 + 3}%`, // Keeps icons slightly away from the absolute screen edges
-      animationDuration: `${Math.random() * 5 + 5}s`, // Slightly slower speed (5s to 10s) for a smoother look
+      animationDuration: `${Math.random() * 5 + 5}s`, // Slower speed (5s to 10s) for a smoother look
       animationDelay: `${Math.random() * 7}s`,        // Spaced out delays
       fontSize: `${Math.random() * 12 + 14}px`,       // Mobile-friendly size variance (14px to 26px)
     });
@@ -34,6 +34,11 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // States specifically for Teacher track views
+  const [myClassrooms, setMyClassrooms] = useState([]);
+  const [pendingStudents, setPendingStudents] = useState([]);
+  const [newClassCode, setNewClassCode] = useState('');
 
   // Sync state with active user sessions and visual cloud profiles
   useEffect(() => {
@@ -49,6 +54,9 @@ export default function Home() {
             .single();
           if (!error && data) {
             setProfile(data);
+            if (data.role === 'teacher' && data.verification_status === 'approved') {
+              fetchTeacherData(session.user.id);
+            }
           }
         }
       } catch (err) {
@@ -59,6 +67,43 @@ export default function Home() {
     };
     checkUser();
   }, []);
+
+  const fetchTeacherData = async (teacherId) => {
+    const { data: classes } = await supabase
+      .from('classrooms')
+      .select('*')
+      .eq('teacher_id', teacherId);
+    setMyClassrooms(classes || []);
+
+    if (classes && classes.length > 0) {
+      const codes = classes.map(c => c.class_code);
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('school_id', codes)
+        .eq('student_approved', false);
+      setPendingStudents(students || []);
+    }
+  };
+
+  const handleCreateClass = async () => {
+    if (!newClassCode) return;
+    const { error } = await supabase
+      .from('classrooms')
+      .insert([{ class_code: newClassCode.toUpperCase(), teacher_id: user.id }]);
+    if (!error) {
+      setNewClassCode('');
+      fetchTeacherData(user.id);
+    }
+  };
+
+  const handleApproveStudent = async (studentId) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ student_approved: true, wallet_balance: 50000 })
+      .eq('id', studentId);
+    if (!error) fetchTeacherData(user.id);
+  };
 
   // The 10 distinct stock and financial assets to populate our raining background matrix
   const ASSET_TYPES = ['₹', '$', '🚀', '📈', '📉', '₿', '📊', '💼', '💳', '💎'];
@@ -74,7 +119,7 @@ export default function Home() {
             <RainingAsset 
               key={`asset-${typeIdx}-${itemIdx}`} 
               icon={asset} 
-              isMobileHidden={itemIdx >= 2} 
+              isMobileHidden={itemIdx >= 2} // Restricts mobile to only 2 particles per asset class
             />
           ))
         )}
@@ -107,7 +152,7 @@ export default function Home() {
               Syncing Terminal...
             </div>
           ) : !user ? (
-            /* STATE A: GUEST NAVIGATION AND NEW ACTIONS ROW */
+            /* STATE A: ORIGINAL GUEST ACTION ROW */
             <>
               <Link
                 href="/signup"
@@ -124,35 +169,71 @@ export default function Home() {
               </Link>
             </>
           ) : (
-            /* STATE B: PROFILE WALLET DISPLAY */
+            /* STATE B: MULTI-TRACK PROFILE COCKPIT VIEWS */
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 text-left shadow-md space-y-4 animate-fadeInFast">
+              
+              {/* LOCKSCREEN STATE: PENDING STUDENT CLEARANCE */}
+              {profile?.role === 'student' && !profile?.student_approved && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-xs space-y-1">
+                  <p className="font-black uppercase tracking-wider">🔒 Verification Pending</p>
+                  <p className="text-slate-600 font-medium">Your profile is connected to code <strong>{profile.school_id}</strong>. Your wallet will unlock as soon as your teacher approves you.</p>
+                </div>
+              )}
+
+              {/* LOCKSCREEN STATE: PENDING TEACHER AUDIT */}
+              {profile?.role === 'teacher' && profile?.verification_status === 'pending' && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-xs space-y-1">
+                  <p className="font-black uppercase tracking-wider">⏳ Verification Auditing</p>
+                  <p className="text-slate-600 font-medium">Your document proof has been submitted to the admin queue. Dashboards will unlock right after approval confirmation.</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Active Trader</p>
-                  <h3 className="text-base font-poppins font-black text-slate-950">{profile?.name || 'Simulator Account'}</h3>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Active User</p>
+                  <h3 className="text-base font-poppins font-black text-slate-950">{profile?.name || 'Workspace Account'}</h3>
                 </div>
                 <span className="px-2.5 py-0.5 bg-slate-100 rounded-full text-[9px] font-black uppercase tracking-wider text-slate-500">
-                  {profile?.role || 'Personal'} Sandbox
+                  {profile?.role} Track
                 </span>
               </div>
               
-              <div className="bg-gradient-to-br from-[#4F8EF7] to-[#3b7add] p-4 rounded-xl text-white shadow-sm space-y-1">
-                <p className="text-[9px] font-black uppercase tracking-wider text-blue-100/80">Available Sandbox Balance</p>
-                <p className="text-2xl font-poppins font-black tracking-tight">
-                  ₹{(profile?.wallet_balance || 50000).toLocaleString('en-IN')}
-                </p>
-              </div>
+              {/* WALLET ALLOCATION LAYERING (EXPOSED IF CLEARED) */}
+              {((profile?.role === 'student' && profile?.student_approved) || profile?.role === 'personal') && (
+                <div className="bg-gradient-to-br from-[#4F8EF7] to-[#3b7add] p-4 rounded-xl text-white shadow-sm space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-blue-100/80">Available Sandbox Balance</p>
+                  <p className="text-2xl font-poppins font-black tracking-tight">
+                    ₹{(profile?.wallet_balance || 0).toLocaleString('en-IN')}
+                  </p>
+                </div>
+              )}
+
+              {/* TEACHER GENERATOR TOOL PANEL */}
+              {profile?.role === 'teacher' && profile?.verification_status === 'approved' && (
+                <div className="space-y-3 pt-1 border-t border-slate-100">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Class Code Matrix</p>
+                  <div className="flex gap-2">
+                    <input type="text" className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono uppercase focus:outline-none" placeholder="E.G. CLASS-10A" value={newClassCode} onChange={(e) => setNewClassCode(e.target.value)} />
+                    <button onClick={handleCreateClass} className="px-3 py-1.5 bg-[#4F8EF7] text-white font-bold text-xs rounded-xl">Generate</button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {myClassrooms.map(c => (
+                      <span key={c.id} className="text-[10px] font-mono font-bold bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md text-slate-600">🎟️ {c.class_code}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2 items-center justify-between pt-1">
-                <div className="text-[10px] text-slate-400 font-medium truncate max-w-[65%]">
-                  ID: <span className="font-mono text-slate-600">{user.email}</span>
+                <div className="text-[10px] text-slate-400 font-medium truncate max-w-[60%] font-mono">
+                  {user.email}
                 </div>
                 <button
                   onClick={async () => {
                     await supabase.auth.signOut();
                     window.location.reload();
                   }}
-                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600 text-[10px] font-bold rounded-lg transition-all"
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-[10px] font-bold rounded-lg transition-all"
                 >
                   Sign Out
                 </button>
@@ -162,6 +243,26 @@ export default function Home() {
         </div>
       </section>
 
+      {/* CONDITIONAL AREA: ROSTER LIST ATTACHED IMMEDIATELY BELOW THE HERO FOR VERIFIED TEACHERS */}
+      {profile?.role === 'teacher' && profile?.verification_status === 'approved' && pendingStudents.length > 0 && (
+        <section className="max-w-md mx-auto px-6 pt-4 relative z-20 animate-fadeInFast">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-md space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">📋 Pending Student Approvals ({pendingStudents.length})</h4>
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+              {pendingStudents.map(student => (
+                <div key={student.id} className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between gap-2 text-xs font-bold">
+                  <div className="truncate">
+                    <p className="text-slate-950 truncate">{student.name}</p>
+                    <p className="text-[9px] text-slate-400 font-mono font-medium truncate">Code: {student.school_id}</p>
+                  </div>
+                  <button onClick={() => handleApproveStudent(student.id)} className="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[10px] whitespace-nowrap">Approve</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* LIVE MARKET SIMULATOR TERMINAL PREVIEW */}
       <section className="max-w-7xl mx-auto px-6 pt-28 relative z-10 flex flex-col items-center justify-center animate-fadeIn">
         <div className="border-b border-slate-200/60 pb-6 mb-12 text-center max-w-xl w-full">
@@ -170,6 +271,8 @@ export default function Home() {
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm w-full max-w-4xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          
+          {/* Ticker Nav Selection controls */}
           <div className="col-span-1 space-y-3">
             <div className="text-[11px] font-black uppercase text-slate-400 tracking-wider px-1">Select Live Stream Desk:</div>
             <button
@@ -188,18 +291,22 @@ export default function Home() {
             </button>
           </div>
 
+          {/* Visual Terminal Workspace Container */}
           <div className="col-span-2 bg-[#0f111a] border border-slate-900 rounded-2xl p-6 font-sans text-slate-200 relative overflow-hidden group min-h-[250px] flex flex-col justify-between shadow-inner">
+            
             {activeTab === 'stocks' && (
               <div className="space-y-4 animate-fadeInFast w-full">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md tracking-wider">RELIANCE.NS • NSE LIVE</span>
                   <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">● Exchange Open</span>
                 </div>
+                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Market Price</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹1,309.35</div>
                   <div className="text-xs font-bold text-emerald-400 font-mono">+₹12.40 (+0.95%)</div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-400">
                   <div>Prev Close: <span className="text-white font-bold">₹1,296.95</span></div>
                   <div>Day Volume: <span className="text-white font-bold">4.2M Shares</span></div>
@@ -213,16 +320,20 @@ export default function Home() {
                   <span className="text-xs font-black bg-purple-950/40 text-purple-300 px-2.5 py-1 rounded-md tracking-wider border border-purple-900/40">TECH.CHALLENGE • HIGH-BETA</span>
                   <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md animate-pulse">⚡ Arena Ticking</span>
                 </div>
+                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Simulated Price Scale</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹12,500.00</div>
                   <div className="text-xs font-bold text-rose-500 font-mono">-₹2,500.00 (-20.00%)</div>
                 </div>
+
                 <div className="p-2.5 bg-rose-500/5 border border-rose-500/10 rounded-xl text-[11px] text-rose-400 leading-relaxed font-semibold">
                   📢 System Event Broadcast: Tech sector crash initiated! TECH drops 20% over current challenge lifecycle step.
                 </div>
               </div>
             )}
+
+            {/* Micro background design curve vectors */}
             <div className="absolute bottom-0 inset-x-0 h-24 opacity-10 pointer-events-none -z-10">
               <svg viewBox="0 0 400 120" preserveAspectRatio="none" className="w-full h-full fill-none stroke-current text-slate-400">
                 <path d="M0,120 L20,90 L50,110 L100,20 L150,80 L200,10 L250,90 L300,40 L350,110 L400,10" strokeWidth="2" strokeLinecap="round" />
@@ -232,7 +343,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CAMPUS DEPLOYMENT METRICS BANNER WITH CLEAR REGISTRATION AND LOGIN OPTIONS */}
+      {/* CAMPUS DEPLOYMENT METRICS BANNER */}
       <section className="max-w-7xl mx-auto px-6 pt-32 relative z-10 animate-fadeIn">
         <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
           <div className="absolute right-0 bottom-0 text-white/5 font-mono font-black text-9xl tracking-tighter pointer-events-none select-none translate-x-10 translate-y-10 group-hover:translate-x-5 group-hover:translate-y-5 transition-transform duration-700">

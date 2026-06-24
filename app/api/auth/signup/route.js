@@ -1,45 +1,61 @@
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export async function POST(request) {
   try {
-    const { name, email, password, role, schoolCode } = await request.json();
+    const { name, email, password, role, schoolCode, documentUrl } = await request.json();
 
-    if (!name || !email || !password || !role) {
-      return NextResponse.json({ error: 'All primary fields are required.' }, { status: 400 });
+    // 1. Check if student is signing up with a classroom code that actually exists
+    if (role === 'student') {
+      const { data: codeCheck, error: codeErr } = await supabase
+        .from('classrooms')
+        .select('class_code')
+        .eq('class_code', schoolCode)
+        .maybeSingle();
+
+      if (codeErr || !codeCheck) {
+        return NextResponse.json({ error: 'Invalid classroom clearance token.' }, { status: 400 });
+      }
     }
 
-    // 1. Create a secure login account inside Supabase Auth
+    // 2. Register the user into Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
-    }
+    if (authError) throw authError;
+    if (!authData?.user) throw new Error('Authentication node drop exception.');
 
-    // 2. Insert custom parameters directly into your database profiles spreadsheet
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([
-        {
-          id: authData.user.id,
-          name,
-          email,
-          role: role, // 'personal', 'student', or 'teacher'
-          school_id: role !== 'personal' ? (schoolCode || null) : null,
-          wallet_balance: 50000 // Standardized to your target ₹50,000 trading allocation
-        }
-      ]);
+    const userId = authData.user.id;
 
-    if (profileError) {
-      return NextResponse.json({ error: profileError.message }, { status: 400 });
-    }
+    // 3. Define adaptive defaults for sandbox cash balance limits
+    const initialBalance = (role === 'personal') ? 50000 : 0;
+    const isTeacherPending = (role === 'teacher') ? 'pending' : 'approved';
+    const isStudentApproved = (role === 'personal'); 
 
-    return NextResponse.json({ success: true }, { status: 201 });
+    // 4. Record details directly into the profiles table
+    const { error: profileError } = await supabase.from('profiles').insert([{
+      id: userId,
+      name,
+      email,
+      role,
+      wallet_balance: initialBalance,
+      school_id: schoolCode,
+      verification_status: isTeacherPending,
+      verification_document_url: documentUrl,
+      student_approved: isStudentApproved
+    }]);
 
+    if (profileError) throw profileError;
+
+    return NextResponse.json({ success: true, user: userId });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal system registry failure.' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
