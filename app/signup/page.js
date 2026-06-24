@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 
@@ -10,12 +9,26 @@ function SignupForm() {
   const [isLogin, setIsLogin] = useState(false);
   const [accountType, setAccountType] = useState('personal');
   const [documentFile, setDocumentFile] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', schoolCode: '' });
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', schoolCode: '', specificClassId: '' });
   const [status, setStatus] = useState({ loading: false, message: '', success: false });
 
   useEffect(() => {
     setIsLogin(searchParams.get('mode') === 'login');
   }, [searchParams]);
+
+  // Dynamically pull classes created by coordinator when school code changes
+  const handleSchoolCodeBlur = async (code) => {
+    if (!code) return;
+    const { data, error } = await supabase
+      .from('school_classes')
+      .select('id, class_name')
+      .eq('school_code', code.toUpperCase());
+    
+    if (!error && data) {
+      setAvailableClasses(data);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,11 +45,10 @@ function SignupForm() {
       } else {
         let uploadedUrl = null;
 
-        // Handle raw binary file upload directly if teacher track is selected
         if (accountType === 'teacher' && documentFile) {
           const fileExt = documentFile.name.split('.').pop();
           const fileName = `${Math.random()}.${fileExt}`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('teacher-proofs')
             .upload(fileName, documentFile);
 
@@ -49,7 +61,6 @@ function SignupForm() {
           uploadedUrl = publicUrlData.publicUrl;
         }
 
-        // Forward structure validation payloads downstream to registration API
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -58,21 +69,22 @@ function SignupForm() {
             email: formData.email,
             password: formData.password,
             role: accountType,
-            schoolCode: accountType === 'student' ? formData.schoolCode : null,
+            schoolCode: formData.schoolCode.toUpperCase(),
+            specificClassId: formData.specificClassId || null,
             documentUrl: uploadedUrl
           }),
         });
         
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Registration fault occurred.');
+        if (!res.ok) throw new Error(data.error || 'Fault in submission.');
 
         setStatus({ 
           loading: false, 
           message: accountType === 'teacher' 
-            ? 'Account created! Complete email verification. Awaiting document audit.' 
+            ? 'Account built! Check inbox to verify. Coordinator approval pending.' 
             : accountType === 'student'
-            ? 'Registered successfully! Your profile is pending teacher clearance.'
-            : 'Account active! Check email for verification link.', 
+            ? 'Success! Awaiting class manager approval to activate your portfolio.'
+            : 'Account active! Verification link pushed to your email address.', 
           success: true 
         });
       }
@@ -85,9 +97,7 @@ function SignupForm() {
     <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
       <div className="text-center space-y-1">
         <h1 className="font-black text-2xl text-slate-950">{isLogin ? 'Welcome Back' : 'Create Your Wallet'}</h1>
-        <p className="text-xs text-slate-500">
-          {isLogin ? 'Access your sandbox workspace.' : 'Initialize your ₹50,000 virtual allocation.'}
-        </p>
+        <p className="text-xs text-slate-500">{isLogin ? 'Access your workspace.' : 'Initialize your ₹50,000 sandbox portfolio.'}</p>
       </div>
 
       {!isLogin && (
@@ -116,17 +126,32 @@ function SignupForm() {
           <input type="email" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="alex@campus.edu" onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
         </div>
 
-        {!isLogin && accountType === 'student' && (
+        {!isLogin && (accountType === 'student' || accountType === 'teacher') && (
           <div className="animate-fadeInFast">
-            <label className="block text-[11px] font-black uppercase text-[#4F8EF7] tracking-wider mb-1">Live Classroom Code</label>
-            <input type="text" required className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-sm font-mono" placeholder="e.g. BAZAAR-X92" onChange={(e) => setFormData({ ...formData, schoolCode: e.target.value })} />
+            <label className="block text-[11px] font-black uppercase text-[#4F8EF7] tracking-wider mb-1">Master School Hub Code</label>
+            <input type="text" required className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-sm font-mono uppercase" placeholder="E.G. DPS-MUMBAI" 
+              onChange={(e) => setFormData({ ...formData, schoolCode: e.target.value })}
+              onBlur={(e) => handleSchoolCodeBlur(e.target.value)} 
+            />
+          </div>
+        )}
+
+        {!isLogin && accountType === 'student' && availableClasses.length > 0 && (
+          <div className="animate-fadeInFast">
+            <label className="block text-[11px] font-black uppercase text-emerald-500 tracking-wider mb-1">Select Your Classroom</label>
+            <select required className="w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-sm font-medium text-slate-700 focus:outline-none" onChange={(e) => setFormData({ ...formData, specificClassId: e.target.value })}>
+              <option value="">-- Choose Class --</option>
+              {availableClasses.map((c) => (
+                <option key={c.id} value={c.id}>{c.class_name}</option>
+              ))}
+            </select>
           </div>
         )}
 
         {!isLogin && accountType === 'teacher' && (
           <div className="animate-fadeInFast">
-            <label className="block text-[11px] font-black uppercase text-amber-500 tracking-wider mb-1">Upload Appointment Letter (PDF/Image)</label>
-            <input type="file" required accept="image/*,application/pdf" className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100" onChange={(e) => setDocumentFile(e.target.files[0])} />
+            <label className="block text-[11px] font-black uppercase text-amber-500 tracking-wider mb-1">Upload Appointment Letter Proof (PDF/Image)</label>
+            <input type="file" required accept="image/*,application/pdf" className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-700" onChange={(e) => setDocumentFile(e.target.files[0])} />
           </div>
         )}
 
@@ -142,34 +167,15 @@ function SignupForm() {
         )}
 
         <button type="submit" disabled={status.loading} className="w-full py-4 bg-[#4F8EF7] text-white font-black rounded-xl text-sm transition-all disabled:opacity-50">
-          {status.loading ? 'Syncing Credentials...' : isLogin ? 'Sign In To Account' : 'Open Free Sandbox Account'}
+          {status.loading ? 'Syncing Workspace...' : isLogin ? 'Sign In' : 'Register Account'}
         </button>
       </form>
 
-      {/* DYNAMIC USER TRANSITION LINKS */}
       <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-100">
         {isLogin ? (
-          <>
-            Don't have an account?{' '}
-            <button 
-              onClick={() => window.history.replaceState(null, '', '/signup')} 
-              className="text-[#4F8EF7] font-bold hover:underline"
-              type="button"
-            >
-              Register here
-            </button>
-          </>
+          <>Don't have an account? <button onClick={() => window.history.replaceState(null, '', '/signup')} className="text-[#4F8EF7] font-bold hover:underline">Register here</button></>
         ) : (
-          <>
-            Already have an account?{' '}
-            <button 
-              onClick={() => window.history.replaceState(null, '', '/signup?mode=login')} 
-              className="text-[#4F8EF7] font-bold hover:underline"
-              type="button"
-            >
-              Login here
-            </button>
-          </>
+          <>Already have an account? <button onClick={() => window.history.replaceState(null, '', '/signup?mode=login')} className="text-[#4F8EF7] font-bold hover:underline">Login here</button></>
         )}
       </div>
     </div>
@@ -178,10 +184,10 @@ function SignupForm() {
 
 export default function Signup() {
   return (
-    <main className="min-h-screen bg-[#f5f7ff] text-[#1e1b4b] antialiased">
+    <main className="min-h-screen bg-[#f5f7ff] antialiased">
       <Navbar />
       <section className="max-w-md mx-auto px-6 pt-16 pb-12">
-        <Suspense fallback={<div className="w-full text-center py-12 animate-pulse text-xs font-bold text-slate-400">Loading Configuration...</div>}>
+        <Suspense fallback={<div className="w-full text-center py-12 text-xs font-bold text-slate-400">Loading Configuration...</div>}>
           <SignupForm />
         </Suspense>
       </section>
