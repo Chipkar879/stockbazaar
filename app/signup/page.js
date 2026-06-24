@@ -145,6 +145,33 @@ function SignupForm() {
           {status.loading ? 'Syncing Credentials...' : isLogin ? 'Sign In To Account' : 'Open Free Sandbox Account'}
         </button>
       </form>
+
+      {/* DYNAMIC USER TRANSITION LINKS */}
+      <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-100">
+        {isLogin ? (
+          <>
+            Don't have an account?{' '}
+            <button 
+              onClick={() => window.history.replaceState(null, '', '/signup')} 
+              className="text-[#4F8EF7] font-bold hover:underline"
+              type="button"
+            >
+              Register here
+            </button>
+          </>
+        ) : (
+          <>
+            Already have an account?{' '}
+            <button 
+              onClick={() => window.history.replaceState(null, '', '/signup?mode=login')} 
+              className="text-[#4F8EF7] font-bold hover:underline"
+              type="button"
+            >
+              Login here
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
