@@ -1,3 +1,7 @@
 node_modules/
 .next/
 out/
+# Local Environment Secrets
+.env
+.env*.local
+.env.local

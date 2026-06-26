@@ -76,6 +76,7 @@ export default function Navbar() {
         <Link href="/" className={`pb-0.5 transition-all ${pathname === '/' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Home</Link>
         <Link href="/simulator" className={`pb-0.5 transition-all ${pathname === '/simulator' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Simulator</Link>
         <Link href="/courses" className={`pb-0.5 transition-all ${pathname === '/courses' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Courses</Link>
+        <Link href="/quiz" className={`pb-0.5 transition-all ${pathname === '/quiz' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Daily Quiz</Link>
         <Link href="/leaderboard" className={`pb-0.5 transition-all ${pathname === '/leaderboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Leaderboard</Link>
         <Link href="/pricing" className={`pb-0.5 transition-all ${pathname === '/pricing' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Pricing</Link>
       </nav>
@@ -120,6 +121,7 @@ export default function Navbar() {
         <Link href="/" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Home</Link>
         <Link href="/simulator" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/simulator' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Simulator</Link>
         <Link href="/courses" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/courses' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Courses</Link>
+        <Link href="/quiz" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/leaderboard' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Daily Quiz</Link>
         <Link href="/leaderboard" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/leaderboard' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Leaderboard</Link>
         <Link href="/pricing" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/pricing' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Pricing</Link>
       </div>
