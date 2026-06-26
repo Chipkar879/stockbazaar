@@ -137,14 +137,31 @@ export default function Home() {
     if (!error) window.location.reload();
   };
 
-  const handleDeleteAccountCompletely = async () => {
-    if (!confirm("CRITICAL WARNING: Wiping your account configuration is permanent. Wipe all wallet data now?")) return;
-    const { error } = await supabase.from('profiles').delete().eq('id', user.id);
-    if (!error) {
-      await supabase.auth.signOut();
-      window.location.reload();
-    }
-  };
+const handlePermanentDeletion = async () => {
+  if (!confirm("CRITICAL WARNING: This will permanently wipe your profile and database nodes. Proceed?")) return;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    // 1. Delete row from public.profiles table first
+    const { error: dbError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', session.user.id);
+
+    if (dbError) throw dbError;
+
+    // 2. Sign out the user globally to destroy the local auth cookie session
+    await supabase.auth.signOut();
+    
+    alert("Account completely dropped from database registers.");
+    window.location.reload();
+  } catch (err) {
+    console.error("Deletion error:", err);
+    alert("Failed to drop database profile row.");
+  }
+};
 
   // The 10 distinct stock and financial assets to populate our raining background matrix
   const ASSET_TYPES = ['\u20B9', '$', '\uD83D\uDE80', '\uD83D\uDCC8', '\uD83D\uDCC9', '\u20BF', '\uD83D\uDCCA', '\uD83D\uDCBC', '\uD83D\uDCB3', '\uD83D\uDC8E'];

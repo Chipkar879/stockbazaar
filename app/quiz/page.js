@@ -6,7 +6,9 @@ import Navbar from '@/components/Navbar';
 export default function DailyQuiz() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [userRank, setUserRank] = useState('Unranked');
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   
   // Game states
   const [quizActive, setQuizActive] = useState(false);
@@ -22,7 +24,7 @@ export default function DailyQuiz() {
   const [hiddenOptions, setHiddenOptions] = useState([]);
   const [isTimerFrozen, setIsTimerFrozen] = useState(false);
 
-  // Timer metrics (5 Minutes Total = 300 seconds)
+  // Timer configuration metrics (5 Minutes Total = 300 seconds)
   const [timeLeft, setTimeLeft] = useState(300);
   const [totalTimeSpent, setTotalTimeSpent] = useState(0);
   const timerRef = useRef(null);
@@ -36,9 +38,13 @@ export default function DailyQuiz() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        
+        // Fetch current user's profile information
         const { data: prof } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         setProfile(prof);
-        fetchQuizLeaderboard();
+        
+        // Fetch leaderboard and calculate rank positions
+        await fetchQuizLeaderboard(session.user.id);
       }
       setLoading(false);
     };
@@ -64,37 +70,51 @@ export default function DailyQuiz() {
     return () => clearInterval(timerRef.current);
   }, [quizActive, quizCompleted, isTimerFrozen]);
 
-  const fetchQuizLeaderboard = async () => {
-    const { data } = await supabase
+  const fetchQuizLeaderboard = async (currentUserId) => {
+    const { data: topPlayers } = await supabase
       .from('profiles')
-      .select('name, quiz_points, role')
+      .select('id, name, quiz_points, role')
       .order('quiz_points', { ascending: false })
       .limit(10);
-    setQuizLeaderboard(data || []);
+    
+    setQuizLeaderboard(topPlayers || []);
+
+    const { data: allRanks } = await supabase
+      .from('profiles')
+      .select('id')
+      .order('quiz_points', { ascending: false });
+
+    if (allRanks && currentUserId) {
+      const targetIndex = allRanks.findIndex(p => p.id === currentUserId);
+      if (targetIndex !== -1) {
+        setUserRank(targetIndex + 1);
+      }
+    }
   };
 
-  // DYNAMIC STREAM: Fetches from your Next.js AI pipeline route
   const startDailyQuizStream = async () => {
     if (!user) return alert("Please login to attempt the Daily Quiz Arena!");
-    
     setLoading(true);
+    setApiError(false);
     
     try {
-      // Connect straight to your serverless Gemini AI engine endpoint
       const res = await fetch('/api/generate-quiz');
+      if (!res.ok) throw new Error("API Route failure status code");
+      
       const aiGeneratedPool = await res.json();
 
-      if (aiGeneratedPool && aiGeneratedPool.length === 15) {
+      if (aiGeneratedPool && Array.isArray(aiGeneratedPool) && aiGeneratedPool.length > 0) {
         setQuestions(aiGeneratedPool);
       } else {
-        setQuestions(generateSampleQuestionPool());
+        throw new Error("Invalid array data format signature");
       }
     } catch (err) {
-      console.error("AI quiz pipeline connection issue:", err);
+      console.error("AI quiz pipeline issue, falling back to local static set:", err);
+      setApiError(true);
       setQuestions(generateSampleQuestionPool());
     }
 
-    // Reset layout game configurations
+    // Reset game positions completely
     setTimeLeft(300);
     setTotalTimeSpent(0);
     setScore(0);
@@ -169,15 +189,18 @@ export default function DailyQuiz() {
 
     if (user && calculatedPoints > 0) {
       const currentPoints = profile?.quiz_points || 0;
-      await supabase.from('profiles').update({ quiz_points: currentPoints + calculatedPoints }).eq('id', user.id);
+      const updatedPoints = currentPoints + calculatedPoints;
+      
+      await supabase.from('profiles').update({ quiz_points: updatedPoints }).eq('id', user.id);
+      setProfile(prev => ({ ...prev, quiz_points: updatedPoints }));
     }
-    fetchQuizLeaderboard();
+    await fetchQuizLeaderboard(user?.id);
   };
 
   const shareAchievement = () => {
-    const text = `🎯 I just scored ${score}/15 correct answers and earned ${pointsEarned} Bazaar Bucks ($BB$) on the Stockbazaar Daily Quiz Arena! Can you beat my financial strategy rank? 🚀`;
+    const text = `🎯 I just scored ${score}/15 on the Stockbazaar Daily Quiz Arena and I'm currently Ranked #${userRank}! Can you beat my financial strategy? 🚀`;
     navigator.clipboard.writeText(text);
-    alert("Achievement clipboard text copied! Share it with your friends or school channels right away. 🙌");
+    alert("Achievement copied to clipboard! Share it with your friends. 🙌");
   };
 
   const formatTime = (seconds) => {
@@ -187,15 +210,11 @@ export default function DailyQuiz() {
   };
 
   const generateSampleQuestionPool = () => {
-    return [...Array(15)].map((_, i) => ({
-      id: 9990 + i,
-      question_text: `Sample Quiz Question #${i + 1}: Which financial metric maps price movements against structural trends?`,
-      option_a: 'Primary Market Yields',
-      option_b: 'Moving Average Indicators',
-      option_c: 'Liquidity Leverage Ratios',
-      option_d: 'Stochastic Order Flow Volumes',
-      correct_option: 'B'
-    }));
+    return [
+      { id: 101, question_text: "What describes a stock's volatility benchmark metrics against overall market index loops?", option_a: "Alpha Index", option_b: "Gamma Scale", option_c: "Beta Coefficient", option_d: "Delta Margin", correct_option: "C" },
+      { id: 102, question_text: "Which balance record showcases systemic tracking assets liabilities and stakeholder equities?", option_a: "Income Document", option_b: "Balance Sheet", option_c: "Cash Flows Matrix", option_d: "Ledger Volume", correct_option: "B" },
+      { id: 103, question_text: "What term reflects corporate cash earnings distributions handed out directly to public stock investors?", option_a: "Bonus Issuances", option_b: "Retained Allocations", option_c: "Dividend Payouts", option_d: "Premium Options", correct_option: "C" }
+    ];
   };
 
   return (
@@ -204,7 +223,33 @@ export default function DailyQuiz() {
 
       <section className="max-w-4xl mx-auto px-6 pt-12 space-y-8 relative z-10">
         
-        {!quizActive && !quizCompleted && (
+        {/* PERSONAL STANDINGS CARD BADGE */}
+        {profile && !quizActive && (
+          <div className="max-w-md mx-auto bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between shadow-md border border-slate-800">
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">Your Current Status</p>
+              <h4 className="text-sm font-black text-white">{profile.name || "Anonymous Trader"}</h4>
+            </div>
+            <div className="flex gap-4 text-right">
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">Rank</p>
+                <p className="text-sm font-mono font-black text-amber-400">#{userRank}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">Balance</p>
+                <p className="text-sm font-mono font-black text-blue-400">{profile.quiz_points || 0} BB</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="text-center text-xs font-bold text-slate-400 py-12 animate-pulse">
+            Configuring Live Battleground Grid Parameters...
+          </div>
+        )}
+
+        {!quizActive && !quizCompleted && !loading && (
           <div className="text-center space-y-4 max-w-xl mx-auto">
             <span className="inline-flex items-center bg-blue-50 border border-blue-100 text-[#4F8EF7] text-[11px] uppercase tracking-widest font-black px-4 py-1.5 rounded-full shadow-inner animate-pulse">
               🧠 Financial Intelligence Battleground
@@ -235,7 +280,7 @@ export default function DailyQuiz() {
             <div className="grid grid-cols-2 gap-3 text-left">
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                 <p className="text-[10px] font-black uppercase text-slate-400">Accuracy</p>
-                <p className="text-xl font-black text-slate-950 font-mono">{score} / 15</p>
+                <p className="text-xl font-black text-slate-950 font-mono">{score} / {questions.length}</p>
               </div>
               <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-100">
                 <p className="text-[10px] font-black uppercase text-emerald-600">Earned Payout</p>
@@ -262,7 +307,8 @@ export default function DailyQuiz() {
           <div className="space-y-6">
             <div className="flex items-center justify-between bg-white border border-slate-200 px-6 py-4 rounded-2xl shadow-sm">
               <div className="font-bold text-xs">
-                Question <span className="font-mono font-black text-slate-950 text-sm">{currentIdx + 1}</span> / 15
+                Question <span className="font-mono font-black text-slate-950 text-sm">{currentIdx + 1}</span> / {questions.length}
+                {apiError && <span className="ml-2 text-[10px] text-amber-500 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Local Cache Mode</span>}
               </div>
               
               <div className={`px-4 py-1.5 rounded-full text-xs font-mono font-black tracking-wider flex items-center gap-1.5 border transition-all ${
@@ -328,7 +374,7 @@ export default function DailyQuiz() {
         )}
 
         {showQuizLeaderboard && !quizActive && (
-          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-md space-y-4 p-6 animate-fadeInFast">
+          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-md space-y-4 p-6">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-black text-slate-950">Bazaar Bucks ($BB$) Standings</h3>
@@ -349,9 +395,13 @@ export default function DailyQuiz() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs font-bold text-slate-600">
                   {quizLeaderboard.map((trader, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50">
-                      <td className="p-3 text-center font-mono font-black text-slate-950">{idx + 1}</td>
-                      <td className="p-3 text-slate-950 font-black">{trader.name}</td>
+                    <tr key={idx} className={`hover:bg-slate-50/50 ${trader.id === user?.id ? 'bg-amber-50/70 border-y border-amber-200' : ''}`}>
+                      <td className="p-3 text-center font-mono font-black text-slate-950">
+                        {idx + 1} {trader.id === user?.id && "⭐"}
+                      </td>
+                      <td className="p-3 text-slate-950 font-black">
+                        {trader.name ? trader.name : "Anonymous Trader"}
+                      </td>
                       <td className="p-3 text-[10px] font-mono text-slate-400 uppercase">{trader.role}</td>
                       <td className="p-3 text-right font-mono font-black text-blue-500">{trader.quiz_points || 0} BB</td>
                     </tr>
