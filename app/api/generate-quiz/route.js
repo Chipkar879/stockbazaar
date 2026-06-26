@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -9,22 +9,22 @@ export async function GET() {
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
-        // This forces Gemini to follow this exact data structure structurally
+        // Passing a clean, vanilla object schema bypasses runtime compilation bugs completely
         responseSchema: {
-          type: SchemaType.ARRAY,
+          type: "ARRAY",
           description: "List of exactly 15 unique financial multiple choice questions.",
           items: {
-            type: SchemaType.OBJECT,
+            type: "OBJECT",
             properties: {
-              id: { type: SchemaType.INTEGER },
-              question_text: { type: SchemaType.STRING },
-              option_a: { type: SchemaType.STRING },
-              option_b: { type: SchemaType.STRING },
-              option_c: { type: SchemaType.STRING },
-              option_d: { type: SchemaType.STRING },
+              id: { type: "INTEGER" },
+              question_text: { type: "STRING" },
+              option_a: { type: "STRING" },
+              option_b: { type: "STRING" },
+              option_c: { type: "STRING" },
+              option_d: { type: "STRING" },
               correct_option: { 
-                type: SchemaType.STRING, 
-                description: "The genuine correct answer key letter. Must be evenly distributed across A, B, C, and D for all 15 questions." 
+                type: "STRING", 
+                description: "The calculated correct answer key option letter. Must be randomly balanced between A, B, C, and D across the list." 
               },
             },
             required: ["id", "question_text", "option_a", "option_b", "option_c", "option_d", "correct_option"],
