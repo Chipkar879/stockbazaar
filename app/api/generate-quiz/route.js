@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, Type } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -11,19 +11,19 @@ export async function GET() {
         responseMimeType: "application/json",
         // This forces Gemini to follow this exact data structure structurally
         responseSchema: {
-          type: Type.ARRAY,
+          type: SchemaType.ARRAY,
           description: "List of exactly 15 unique financial multiple choice questions.",
           items: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              id: { type: Type.INTEGER },
-              question_text: { type: Type.STRING },
-              option_a: { type: Type.STRING },
-              option_b: { type: Type.STRING },
-              option_c: { type: Type.STRING },
-              option_d: { type: Type.STRING },
+              id: { type: SchemaType.INTEGER },
+              question_text: { type: SchemaType.STRING },
+              option_a: { type: SchemaType.STRING },
+              option_b: { type: SchemaType.STRING },
+              option_c: { type: SchemaType.STRING },
+              option_d: { type: SchemaType.STRING },
               correct_option: { 
-                type: Type.STRING, 
+                type: SchemaType.STRING, 
                 description: "The genuine correct answer key letter. Must be evenly distributed across A, B, C, and D for all 15 questions." 
               },
             },
