@@ -215,7 +215,7 @@ export default function DailyQuiz() {
   };
 
   const shareAchievement = () => {
-    const text = `🎯 I just scored ${score}/15 on the Stockbazaar Daily Quiz Arena and I'm currently Ranked #${userRank}! Can you beat my financial strategy? 🚀`;
+    const text = `🎯 I just scored ${score}/15 on the Stockbazaar Daily Quiz Arena and I'm currently Ranked #${userRank}! Can you beat my financial strategy? View more on stockbazaar.vercel.app 🚀`;
     navigator.clipboard.writeText(text);
     alert("Achievement copied to clipboard! Share it with your friends. 🙌");
   };
