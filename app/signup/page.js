@@ -81,10 +81,10 @@ function SignupForm() {
         setStatus({ 
           loading: false, 
           message: accountType === 'teacher' 
-            ? 'Account built! Check inbox to verify. Coordinator approval pending.' 
+            ? 'Account built! Coordinator approval pending.' 
             : accountType === 'student'
             ? 'Success! Awaiting class manager approval to activate your portfolio.'
-            : 'Account active! Verification link pushed to your email address.', 
+            : 'Account active! You can now log in and start trading in your ₹50,000 sandbox portfolio.', 
           success: true 
         });
       }
