@@ -11,9 +11,70 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// UPGRADED SEO SEARCH ENGINE PARAMETERS
 export const metadata = {
-  title: "Stockbazaar",
-  description: "Practice paper trading risk-free and learn market strategies.",
+  title: {
+    default: "Stockbazaar | Premium Stock Market Sandbox Arena",
+    template: "%s | Stockbazaar"
+  },
+  description: "Practice paper trading risk-free with live NSE market feeds, join custom classroom trading tournaments, and climb the standings leaderboard.",
+  keywords: [
+    // Core Simulator & Paper Trading Phrases
+    "stock market simulator", 
+    "paper trading India", 
+    "NSE simulator", 
+    "virtual stock trading app",
+    "free portfolio tracker mock",
+    "nifty 50 simulator game",
+    "learn trading risk free",
+    "live market data sandbox",
+    "virtual stock market platform",
+    
+    // Quiz & Gamification Terms
+    "finance mock quiz", 
+    "classroom trading game", 
+    "Stockbazaar sandbox",
+    "financial intelligence battleground",
+    "stock market game for schools",
+    "daily finance mcq challenge",
+    "bazaar bucks leaderboard",
+    
+    // Indian Market Specifics (High Volume)
+    "nse bse virtual trading",
+    "practice intra day trading free",
+    "indian stock market game for students",
+    "fno simulation sandbox india",
+    "share market learning app free"
+  ],
+  authors: [{ name: "Vikrant Chipkar" }],
+  metadataBase: new URL("https://stockbazaar.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Stockbazaar | Classroom Stock Market Sandbox Arena",
+    description: "Practice paper trading risk-free with live market data feeds and competitive leaderboards.",
+    url: "https://stockbazaar.vercel.app",
+    siteName: "Stockbazaar",
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Stockbazaar | Stock Market Sandbox Arena",
+    description: "Practice paper trading risk-free with live market data feeds.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -22,7 +83,9 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#f5f7ff]">
+        {children}
+      </body>
     </html>
   );
 }
