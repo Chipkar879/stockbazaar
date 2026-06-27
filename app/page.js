@@ -137,31 +137,31 @@ export default function Home() {
     if (!error) window.location.reload();
   };
 
-    const handlePermanentDeletion = async () => {
-      if (!confirm("CRITICAL WARNING: This will permanently wipe your profile and database nodes. Proceed?")) return;
+  const handlePermanentDeletion = async () => {
+    if (!confirm("CRITICAL WARNING: This will permanently wipe your profile and database nodes. Proceed?")) return;
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
 
-        // 1. Delete row from public.profiles table first
-        const { error: dbError } = await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', session.user.id);
+      // 1. Delete row from public.profiles table first
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', session.user.id);
 
-        if (dbError) throw dbError;
+      if (dbError) throw dbError;
 
-        // 2. Sign out the user globally to destroy the local auth cookie session
-        await supabase.auth.signOut();
-        
-        alert("Account completely dropped from database registers.");
-        window.location.reload();
-      } catch (err) {
-        console.error("Deletion error:", err);
-        alert("Failed to drop database profile row.");
-      }
-    };
+      // 2. Sign out the user globally to destroy the local auth cookie session
+      await supabase.auth.signOut();
+      
+      alert("Account completely dropped from database registers.");
+      window.location.reload();
+    } catch (err) {
+      console.error("Deletion error:", err);
+      alert("Failed to drop database profile row.");
+    }
+  };
 
   // The 10 distinct stock and financial assets to populate our raining background matrix
   const ASSET_TYPES = ['\u20B9', '$', '\uD83D\uDE80', '\uD83D\uDCC8', '\uD83D\uDCC9', '\u20BF', '\uD83D\uDCCA', '\uD83D\uDCBC', '\uD83D\uDCB3', '\uD83D\uDC8E'];
@@ -177,7 +177,7 @@ export default function Home() {
             <RainingAsset 
               key={`asset-${typeIdx}-${itemIdx}`} 
               icon={asset} 
-              isMobileHidden={itemIdx >= 2} // Restricts mobile to only 2 particles per asset class
+              isMobileHidden={itemIdx >= 2} 
             />
           ))
         )}
@@ -188,7 +188,7 @@ export default function Home() {
         <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-[#4F8EF7]/15 to-[#34D399]/15 blur-[100px] rounded-full -z-10 animate-pulse duration-5000" />
 
         <div className="space-y-4 max-w-3xl mx-auto select-none animate-fadeIn">
-          <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-[#4F8EF7] text-[10px] sm:text-[11px] uppercase tracking-widest font-black px-4 py-1.5 rounded-full shadow-inner animate-bounce">
+          <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-[#4F8EF7] text-[11px] uppercase tracking-widest font-black px-4 py-1.5 rounded-full shadow-inner animate-bounce">
             🚀 The Ultimate Classroom Sandbox Arena
           </span>
           <h1 className="text-4xl sm:text-7xl font-black tracking-tight leading-none text-slate-950">
@@ -203,14 +203,13 @@ export default function Home() {
           </p>
         </div>
 
-        {/* INTERACTIVE ACTIONS HUB WITH INTEGRATED AUTH CONDITIONS */}
+        {/* INTERACTIVE ACTIONS HUB */}
         <div className="flex flex-wrap justify-center items-center gap-4 pt-4 animate-scaleUp">
           {loading ? (
             <div className="px-10 py-4 bg-slate-200 text-slate-400 rounded-2xl text-sm font-bold animate-pulse">
               Syncing Terminal...
             </div>
           ) : !user ? (
-            /* STATE A: ORIGINAL GUEST ACTION ROW */
             <>
               <Link
                 href="/signup"
@@ -227,10 +226,8 @@ export default function Home() {
               </Link>
             </>
           ) : (
-            /* STATE B: MULTI-TRACK PROFILE COCKPIT VIEWS */
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 text-left shadow-md space-y-4 animate-fadeInFast">
               
-              {/* LOCKSCREEN STATE: PENDING STUDENT CLEARANCE */}
               {profile?.role === 'student' && !profile?.student_approved && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-xs space-y-1">
                   <p className="font-black uppercase tracking-wider">🔒 Verification Pending</p>
@@ -238,7 +235,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* LOCKSCREEN STATE: PENDING TEACHER AUDIT */}
               {profile?.role === 'teacher' && profile?.verification_status === 'pending' && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-xs space-y-1">
                   <p className="font-black uppercase tracking-wider">⏳ Verification Auditing</p>
@@ -256,7 +252,6 @@ export default function Home() {
                 </span>
               </div>
               
-              {/* WALLET ALLOCATION LAYERING (EXPOSED IF CLEARED) */}
               {((profile?.role === 'student' && profile?.student_approved) || profile?.role === 'personal') && (
                 <div className="bg-gradient-to-br from-[#4F8EF7] to-[#3b7add] p-4 rounded-xl text-white shadow-sm space-y-1">
                   <p className="text-[9px] font-black uppercase tracking-wider text-blue-100/80">Available Sandbox Balance</p>
@@ -266,14 +261,12 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ACTIVE STUDENT CONTROL MATRIX */}
               {profile?.role === 'student' && (
                 <button onClick={handleLeaveClassroomTrack} className="w-full py-2 bg-rose-50 border border-rose-100 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-all">
                   Leave Classroom Tracker
                 </button>
               )}
 
-              {/* PRIYANKA MISS & COORDINATOR DELEGATION MATRIX VIEW */}
               {profile?.role === 'teacher' && profile?.verification_status === 'approved' && (
                 <div className="space-y-4 pt-1 border-t border-slate-100">
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
@@ -302,11 +295,11 @@ export default function Home() {
                 </div>
               )}
 
-              {/* DANGER ZONE: CORE CLEANUP ENGINE (Exposed globally for all user contexts) */}
+              {/* DANGER ZONE (Correctly referenced to handlePermanentDeletion) */}
               <div className="p-3.5 border border-rose-100 bg-rose-50/20 rounded-2xl space-y-1">
                 <h4 className="text-xs font-black text-rose-600 uppercase tracking-wider">⚠️ Danger Zone</h4>
                 <p className="text-[10px] text-slate-400 font-medium">Wiping your profile is immediate, final, and deletes all linked transaction data.</p>
-                <button onClick={handleDeleteAccountCompletely} className="mt-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] rounded-xl transition-all">
+                <button onClick={handlePermanentDeletion} className="mt-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] rounded-xl transition-all">
                   Delete My Account Completely
                 </button>
               </div>
@@ -330,7 +323,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CONDITIONAL AREA: ROSTER REQUESTS ASSIGNED TO LOGGED IN CLASSROOM MANAGERS */}
       {profile?.role === 'teacher' && profile?.verification_status === 'approved' && pendingClassStudents.length > 0 && (
         <section className="max-w-md mx-auto px-6 pt-4 relative z-20 animate-fadeInFast">
           <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-md space-y-3">
@@ -358,8 +350,6 @@ export default function Home() {
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm w-full max-w-4xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          
-          {/* Ticker Nav Selection controls */}
           <div className="col-span-1 space-y-3">
             <div className="text-[11px] font-black uppercase text-slate-400 tracking-wider px-1">Select Live Stream Desk:</div>
             <button
@@ -378,22 +368,18 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Visual Terminal Workspace Container */}
           <div className="col-span-2 bg-[#0f111a] border border-slate-900 rounded-2xl p-6 font-sans text-slate-200 relative overflow-hidden group min-h-[250px] flex flex-col justify-between shadow-inner">
-            
             {activeTab === 'stocks' && (
               <div className="space-y-4 animate-fadeInFast w-full">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md tracking-wider">RELIANCE.NS • NSE LIVE</span>
                   <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">● Exchange Open</span>
                 </div>
-                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Market Price</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹1,309.35</div>
                   <div className="text-xs font-bold text-emerald-400 font-mono">+₹12.40 (+0.95%)</div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-400">
                   <div>Prev Close: <span className="text-white font-bold">₹1,296.95</span></div>
                   <div>Day Volume: <span className="text-white font-bold">4.2M Shares</span></div>
@@ -407,20 +393,17 @@ export default function Home() {
                   <span className="text-xs font-black bg-purple-950/40 text-purple-300 px-2.5 py-1 rounded-md tracking-wider border border-purple-900/40">TECH.CHALLENGE • HIGH-BETA</span>
                   <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md animate-pulse">⚡ Arena Ticking</span>
                 </div>
-                
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Simulated Price Scale</div>
                   <div className="text-3xl font-black font-mono tracking-tight text-white">₹12,500.00</div>
                   <div className="text-xs font-bold text-rose-500 font-mono">-₹2,500.00 (-20.00%)</div>
                 </div>
-
                 <div className="p-2.5 bg-rose-500/5 border border-rose-500/10 rounded-xl text-[11px] text-rose-400 leading-relaxed font-semibold">
                   📢 System Event Broadcast: Tech sector crash initiated! TECH drops 20% over current challenge lifecycle step.
                 </div>
               </div>
             )}
 
-            {/* Micro background design curve vectors */}
             <div className="absolute bottom-0 inset-x-0 h-24 opacity-10 pointer-events-none -z-10">
               <svg viewBox="0 0 400 120" preserveAspectRatio="none" className="w-full h-full fill-none stroke-current text-slate-400">
                 <path d="M0,120 L20,90 L50,110 L100,20 L150,80 L200,10 L250,90 L300,40 L350,110 L400,10" strokeWidth="2" strokeLinecap="round" />
@@ -461,10 +444,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CAMPUS DEPLOYMENT METRICS BANNER (CLEANED UP - 'SB' STRING REMOVED COMPLETELY) */}
+      {/* CAMPUS DEPLOYMENT METRICS BANNER */}
       <section id="pricing" className="max-w-7xl mx-auto px-6 pt-32 relative z-10 scroll-mt-24">
         <div className="bg-gradient-to-br from-slate-950 to-indigo-950 text-white rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group border border-white/5">
-          
           <div className="space-y-3 max-w-xl text-center md:text-left z-10">
             <span className="bg-white/10 text-[#34D399] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-white/5">
               Campus Classroom Access
@@ -475,7 +457,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* PARALLEL ACTION BUTTON BLOCK */}
           <div className="w-full md:w-auto z-10 flex flex-col sm:flex-row items-center gap-4 justify-center">
             <Link
               href="/signup"
