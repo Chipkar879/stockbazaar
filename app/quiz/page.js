@@ -78,10 +78,11 @@ export default function DailyQuiz() {
   }, [quizActive, quizCompleted, isTimerFrozen]);
 
   const fetchQuizLeaderboard = async (currentUserId) => {
+    // Fetch top players and explicitly instruct the database handling engine to treat empty rows safely
     const { data: topPlayers } = await supabase
       .from('profiles')
       .select('id, name, quiz_points, role')
-      .order('quiz_points', { ascending: false })
+      .order('quiz_points', { ascending: false, nullsFirst: false })
       .limit(10);
     
     setQuizLeaderboard(topPlayers || []);
@@ -89,7 +90,7 @@ export default function DailyQuiz() {
     const { data: allRanks } = await supabase
       .from('profiles')
       .select('id, quiz_points')
-      .order('quiz_points', { ascending: false });
+      .order('quiz_points', { ascending: false, nullsFirst: false });
 
     if (allRanks && currentUserId) {
       const targetIndex = allRanks.findIndex(p => p.id === currentUserId);

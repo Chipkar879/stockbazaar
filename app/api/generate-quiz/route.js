@@ -3,13 +3,22 @@ import { NextResponse } from 'next/server';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// CRITICAL: Force Next.js and Vercel to treat this route as completely dynamic on every request
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
+    // Basic verification to fail early if Vercel drops the environment variables configuration
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("Missing GEMINI_API_KEY environment variable setup.");
+      return NextResponse.json({ error: "API configuration missing" }, { status: 500 });
+    }
+
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
-        // Passing a clean, vanilla object schema bypasses runtime compilation bugs completely
         responseSchema: {
           type: "ARRAY",
           description: "List of exactly 15 unique financial multiple choice questions.",
@@ -44,11 +53,22 @@ export async function GET() {
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    const quizData = JSON.parse(responseText);
+    
+    // Clean up response string if markdown tags wrapped the JSON payload array
+    const cleanJsonString = responseText.replace(/```json|```/g, "").trim();
+    const quizData = JSON.parse(cleanJsonString);
 
-    return NextResponse.json(quizData);
+    // Explicitly add cache-busting headers so the browser doesn't save previous failures
+    return NextResponse.json(quizData, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error("Gemini runtime API failure:", error);
-    return NextResponse.json({ error: "Failed to generate AI quiz data stream" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to generate dynamic context pool" }, { status: 500 });
   }
 }
