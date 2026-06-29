@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// UPGRADED SEO SEARCH ENGINE PARAMETERS
+// TOTAL REWRITTEN METADATA AND SEO CONFIGURATION
 export const metadata = {
   title: {
     default: "Stockbazaar | Premium Stock Market Sandbox Arena",
@@ -74,6 +74,10 @@ export const metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
+  },
+  // THE GOOGLE VERIFICATION CODE LINE AT THE VERY END
+  verification: {
+    google: 'VQoGNl67LtYaYB-yOhc8N_G1pyNl7cUr2M-20CRQXtU',
   },
 };
 
