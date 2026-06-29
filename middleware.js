@@ -10,9 +10,9 @@ export async function middleware(request) {
   // 3. Fallback check for standard explicit session tokens
   const hasSessionToken = request.cookies.has('sb-access-token') || request.cookies.has('supabase-auth-token');
 
-  // 4. STRICT LOCKOUT: If no auth markers exist, force redirect to /login
+  // 4. STRICT LOCKOUT: If no auth markers exist, force redirect to the local /signup folder
   if (!hasAuthCookie && !hasSessionToken) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/signup', request.url));
   }
 
   // 5. If cookies exist, let them through to the dashboard pages
