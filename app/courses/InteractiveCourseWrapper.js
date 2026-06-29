@@ -3,180 +3,231 @@
 import React, { useState } from 'react';
 
 export default function InteractiveCourseWrapper({ initialTracks }) {
-  const [completedModules, setCompletedModules] = useState([]);
-  const [activeTrack, setActiveTrack] = useState(null);
+  const [completedSubmodules, setCompletedSubmodules] = useState([]);
+  const [selectedTrackId, setSelectedTrackId] = useState(initialTracks[0]?.id || null);
+  const [activeModalSubmod, setActiveModalSubmod] = useState(null);
 
-  // Creates a flat sequential map of all modules to calculate progression locks smoothly
-  const allModules = initialTracks.flatMap(t => t.modules || []);
+  // Flatten out all submodules sequentially across the entire application architecture 
+  const allSubmodules = initialTracks.flatMap(track => 
+    (track.modules || []).flatMap(mod => mod.submodules || [])
+  );
 
-  const toggleModuleCompletion = (moduleId) => {
-    if (completedModules.includes(moduleId)) {
-      setCompletedModules(completedModules.filter(id => id !== moduleId));
-    } else {
-      setCompletedModules([...completedModules, moduleId]);
+  const activeTrack = initialTracks.find(t => t.id === selectedTrackId);
+
+  const toggleSubmoduleComplete = (submodId) => {
+    if (!completedSubmodules.includes(submodId)) {
+      setCompletedSubmodules([...completedSubmodules, submodId]);
     }
+    setActiveModalSubmod(null); // Dismiss screen overlay modal frame
   };
 
-  const isModuleUnlocked = (moduleId) => {
-    const currentIndex = allModules.findIndex(m => m.id === moduleId);
-    if (currentIndex === 0) return true; // First element is always available to start
+  const isSubmoduleUnlocked = (submodId) => {
+    const index = allSubmodules.findIndex(sm => sm.id === submodId);
+    if (index === 0) return true; // Ultimate entry point is always active
     
-    const previousModule = allModules[currentIndex - 1];
-    return completedModules.includes(previousModule.id);
+    // Check if the previous submodule is marked as concluded
+    return completedSubmodules.includes(allSubmodules[index - 1]?.id);
   };
 
-  const isTrackUnlocked = (trackIndex) => {
-    if (trackIndex === 0) return true; // Track 1 is always accessible
+  const isTrackUnlocked = (trackIdx) => {
+    if (trackIdx === 0) return true;
     
-    // Check if the absolute last module of the preceding track is completed
-    const previousTrack = initialTracks[trackIndex - 1];
-    if (!previousTrack || !previousTrack.modules || previousTrack.modules.length === 0) return true;
+    // Previous track's absolute final submodule must be fully cleared
+    const prevTrack = initialTracks[trackIdx - 1];
+    const prevTrackSubmods = (prevTrack?.modules || []).flatMap(m => m.submodules || []);
+    if (prevTrackSubmods.length === 0) return true;
     
-    const lastModuleOfPreviousTrack = previousTrack.modules[previousTrack.modules.length - 1];
-    return completedModules.includes(lastModuleOfPreviousTrack.id);
+    return completedSubmodules.includes(prevTrackSubmods[prevTrackSubmods.length - 1]?.id);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="space-y-10 relative">
       
-      {/* Dynamic Accordion Section */}
-      <section className="lg:col-span-2 space-y-6">
-        {initialTracks.map((track, trackIdx) => {
-          const unlocked = isTrackUnlocked(trackIdx);
-          const isActive = activeTrack === track.id;
+      {/* 1. TOP SECTION: 3 CARDS SIDE BY SIDE */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {initialTracks.map((track, idx) => {
+          const unlocked = isTrackUnlocked(idx);
+          const isSelected = selectedTrackId === track.id;
 
           return (
-            <div 
-              key={track.id} 
-              className={`bg-white rounded-2xl border transition shadow-sm ${
-                unlocked ? 'border-slate-200' : 'border-slate-100 opacity-50'
+            <div
+              key={track.id}
+              onClick={() => unlocked && setSelectedTrackId(track.id)}
+              className={`p-6 rounded-2xl border transition-all duration-300 select-none text-left ${
+                unlocked 
+                  ? isSelected
+                    ? 'bg-blue-600 border-transparent text-white shadow-xl scale-[1.02]'
+                    : 'bg-white border-slate-200 text-slate-800 shadow-sm hover:shadow-md cursor-pointer'
+                  : 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed'
               }`}
             >
-              {/* Main Card Header */}
-              <div 
-                onClick={() => unlocked && setActiveTrack(isActive ? null : track.id)}
-                className={`p-6 flex items-start justify-between gap-4 cursor-pointer select-none ${
-                  unlocked ? 'hover:bg-slate-50/50' : 'cursor-not-allowed'
-                }`}
-              >
-                <div className="flex gap-4 items-start">
-                  <span className="font-poppins font-black text-3xl text-blue-600 tracking-tight">
-                    {track.trackNumber || trackIdx + 1}
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h2 className="font-poppins font-extrabold text-xl text-slate-900">{track.title}</h2>
-                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                        track.level === 'Beginner' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                        track.level === 'Intermediate' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                        'bg-rose-50 text-rose-700 border border-rose-100'
-                      }`}>
-                        {track.level || 'Standard'}
-                      </span>
-                    </div>
-                    <p className="text-slate-600 text-sm mt-2 font-normal leading-relaxed">{track.description}</p>
-                    <span className="text-xs text-slate-400 font-medium block mt-3">
-                      {(track.modules || []).length} Modules Available
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
-                  {!unlocked ? (
-                    <span className="text-xl">🔒</span>
-                  ) : (
-                    <span className="text-slate-400 font-bold text-lg">{isActive ? '▲' : '▼'}</span>
-                  )}
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <span className={`font-poppins font-black text-3xl ${isSelected ? 'text-blue-200' : 'text-blue-600'}`}>
+                  {track.trackNumber || idx + 1}
+                </span>
+                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                  isSelected 
+                    ? 'bg-blue-500/40 border border-blue-400 text-white' 
+                    : 'bg-slate-100 border border-slate-200 text-slate-600'
+                }`}>
+                  {track.level}
+                </span>
               </div>
-
-              {/* Inner Dropdown Modules */}
-              {isActive && unlocked && (
-                <div className="border-t border-slate-100 p-6 bg-slate-50/30 space-y-4">
-                  {(track.modules || []).map((mod) => {
-                    const modUnlocked = isModuleUnlocked(mod.id);
-                    const isDone = completedModules.includes(mod.id);
-
-                    return (
-                      <div 
-                        key={mod.id} 
-                        className={`p-4 rounded-xl border transition ${
-                          modUnlocked 
-                            ? isDone 
-                              ? 'bg-emerald-50/40 border-emerald-200' 
-                              : 'bg-white border-slate-200 shadow-sm'
-                            : 'bg-slate-100/60 border-slate-200 opacity-60 select-none'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                              isDone ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
-                            }`}>
-                              {isDone ? '✓' : '•'}
-                            </span>
-                            <h3 className={`font-bold text-sm ${modUnlocked ? 'text-slate-800' : 'text-slate-400'}`}>
-                              {mod.title}
-                            </h3>
-                          </div>
-
-                          {modUnlocked ? (
-                            <button
-                              onClick={() => toggleModuleCompletion(mod.id)}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition ${
-                                isDone 
-                                  ? 'bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50'
-                                  : 'bg-blue-600 border-transparent text-white hover:bg-blue-700'
-                              }`}
-                            >
-                              {isDone ? 'Mark Incomplete' : 'Complete'}
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-400 font-medium italic">🔒 Locked</span>
-                          )}
-                        </div>
-
-                        {/* Renders submodules if they exist inside the array */}
-                        {modUnlocked && mod.submodules && mod.submodules.length > 0 && (
-                          <div className="mt-3 ml-9 pl-3 border-l-2 border-slate-200 space-y-1.5">
-                            {mod.submodules.map((sub, sIdx) => (
-                              <div key={sIdx} className="text-xs text-slate-600 flex items-center gap-2">
-                                <span className="text-slate-400">▹</span> {sub}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <h2 className="font-poppins font-extrabold text-xl tracking-tight">{track.title}</h2>
+              <p className={`text-sm mt-2 leading-relaxed ${isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
+                {track.description}
+              </p>
+              {!unlocked && <div className="mt-4 text-xs font-bold tracking-wide text-slate-400">🔒 LOCKED UNTIL PRIOR TRACK CLEARED</div>}
             </div>
           );
         })}
       </section>
 
-      {/* Progress Monitor Sidebar */}
-      <aside className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit space-y-4">
-        <h2 className="font-poppins font-bold text-lg text-slate-800">Learning Status</h2>
-        
-        <div className="space-y-2">
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Overall Progress</div>
-          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+      {/* 2. MIDDLE SECTION: DYNAMIC GRID OF MODULES & SUBMODULE CARDS */}
+      {activeTrack && (
+        <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8 animate-fadeIn">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-md">
+              Active Focus Arena
+            </span>
+            <h2 className="font-poppins font-black text-2xl text-slate-900 mt-2">{activeTrack.title} Layout</h2>
+          </div>
+
+          <div className="space-y-8">
+            {(activeTrack.modules || []).map((mod, mIdx) => (
+              <div key={mod.id} className="space-y-4">
+                <h3 className="font-poppins font-bold text-lg text-slate-700 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Module {mIdx + 1}: {mod.title}
+                </h3>
+
+                {/* Submodule Cards Frame Grid Container */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(mod.submodules || []).map((submod) => {
+                    const submodUnlocked = isSubmoduleUnlocked(submod.id);
+                    const completed = completedSubmodules.includes(submod.id);
+
+                    return (
+                      <div
+                        key={submod.id}
+                        onClick={() => submodUnlocked && setActiveModalSubmod(submod)}
+                        className={`p-5 rounded-xl border text-left transition-all ${
+                          submodUnlocked
+                            ? completed
+                              ? 'bg-emerald-50/50 border-emerald-200 cursor-pointer hover:bg-emerald-50'
+                              : 'bg-white border-slate-200 shadow-sm hover:border-blue-400 hover:shadow cursor-pointer'
+                            : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <h4 className={`font-bold text-sm tracking-tight ${submodUnlocked ? 'text-slate-900' : 'text-slate-400'}`}>
+                            {submod.title}
+                          </h4>
+                          {completed ? (
+                            <span className="text-emerald-600 text-sm font-bold">✓</span>
+                          ) : !submodUnlocked ? (
+                            <span className="text-slate-400 text-xs">🔒</span>
+                          ) : null}
+                        </div>
+                        <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed">{submod.intro}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3. BOTTOM SECTION: OVERALL PROGRESSION STATS DASHBOARD CARD */}
+      <footer className="bg-slate-900 text-white p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
+        <div className="text-center md:text-left space-y-1">
+          <h3 className="font-poppins font-bold text-lg">Overall Laboratory Standing</h3>
+          <p className="text-slate-400 text-xs">Finish all milestones to secure complete profile validation rewards.</p>
+        </div>
+        <div className="w-full md:w-2/3 space-y-2">
+          <div className="flex justify-between text-xs font-bold text-slate-300">
+            <span>Progress Metric</span>
+            <span>{completedSubmodules.length} / {allSubmodules.length} Active Nodes Cleared</span>
+          </div>
+          <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
             <div 
-              className="bg-emerald-500 h-2.5 transition-all duration-300" 
-              style={{ width: `${allModules.length ? (completedModules.length / allModules.length) * 100 : 0}%` }}
+              className="bg-gradient-to-r from-blue-500 to-emerald-500 h-full transition-all duration-500 ease-out"
+              style={{ width: `${allSubmodules.length ? (completedSubmodules.length / allSubmodules.length) * 100 : 0}%` }}
             />
           </div>
-          <div className="text-xs text-slate-600 font-medium text-right">
-            {completedModules.length} of {allModules.length} Modules Concluded
+        </div>
+      </footer>
+
+      {/* 4. FLOATING SCREEN DIALOG LIGHTBOX CONTAINER WITH BACKGROUND BLUR */}
+      {activeModalSubmod && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/60 transition-all duration-300 animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-scaleUp">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="font-poppins font-black text-xl text-slate-900 tracking-tight">
+                {activeModalSubmod.title}
+              </h3>
+              <button 
+                onClick={() => setActiveModalSubmod(null)}
+                className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 font-bold flex items-center justify-center hover:bg-slate-100 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body Canvas */}
+            <div className="p-6 overflow-y-auto space-y-6 text-left flex-1">
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                <p className="text-blue-900 text-sm font-medium leading-relaxed">
+                  {activeModalSubmod.intro}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Core Concept Overview</h4>
+                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                  {activeModalSubmod.content}
+                </p>
+              </div>
+
+              {/* Conditional Video Engine Rendering Frame */}
+              {activeModalSubmod.videoUrl && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Multimedia Briefing</h4>
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm">
+                    <iframe 
+                      className="absolute inset-0 w-full h-full"
+                      src={activeModalSubmod.videoUrl}
+                      title={activeModalSubmod.title}
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={() => setActiveModalSubmod(null)}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white transition"
+              >
+                Close View
+              </button>
+              <button
+                onClick={() => toggleSubmoduleComplete(activeModalSubmod.id)}
+                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow transition"
+              >
+                Complete Module & Next
+              </button>
+            </div>
+
           </div>
         </div>
-
-        <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 text-sm text-slate-600">
-          💡 <strong>Pro-Tip:</strong> Complete modules in sequence to unlock more advanced tracks.
-        </div>
-      </aside>
+      )}
 
     </div>
   );

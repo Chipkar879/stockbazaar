@@ -9,32 +9,42 @@
       {
         "id": "m1-1",
         "title": "Introduction to Capital Markets",
-        "submodules": ["Primary vs Secondary Markets", "Role of SEBI & Regulatory Framework", "How Stock Exchanges (NSE & BSE) Function"]
+        "submodules": [
+          {
+            "id": "sm1-1-1",
+            "title": "Primary vs Secondary Markets",
+            "intro": "Learn how companies raise capital through IPOs (Primary Market) and how retail traders buy/sell those shares later (Secondary Market).",
+            "content": "The primary market is where securities are created. It's in this market that firms sell new stocks and bonds to the public for the first time, such as in an Initial Public Offering (IPO). The secondary market, on the other hand, is what people commonly refer to as the 'stock market'. This includes the NSE and BSE, where investors trade previously issued securities among themselves without the involvement of the issuing companies.",
+            "videoUrl": "https://www.youtube.com/embed/placeholder1"
+          },
+          {
+            "id": "sm1-1-2",
+            "title": "Role of SEBI & Regulations",
+            "intro": "Understanding the watchdog of Indian capital markets.",
+            "content": "The Securities and Exchange Board of India (SEBI) regulates the Indian markets to protect retail investors, ensure transparency, and prevent fraudulent trading practices.",
+            "videoUrl": ""
+          },
+          {
+            "id": "sm1-1-3",
+            "title": "How NSE & BSE Function",
+            "intro": "The order routing hubs of India.",
+            "content": "National Stock Exchange (NSE) and Bombay Stock Exchange (BSE) serve as the technological bridges matching buyers and sellers instantaneously via electronic order books.",
+            "videoUrl": "https://www.youtube.com/embed/placeholder2"
+          }
+        ]
       },
       {
         "id": "m1-2",
         "title": "Mechanics of a Stock Chart",
-        "submodules": ["Line, Bar, and Candlestick Basics", "Understanding OHLC (Open, High, Low, Close)", "Timeframes: Intraday vs Swing Charts"]
-      },
-      {
-        "id": "m1-3",
-        "title": "Order Types & Market Execution",
-        "submodules": ["Market Orders vs Limit Orders", "Stop-Loss and Target Orders", "Understanding the Order Book & Liquidity"]
-      },
-      {
-        "id": "m1-4",
-        "title": "Index Operations & Market Cap",
-        "submodules": ["How Nifty 50 & Sensex are Calculated", "Large-Cap, Mid-Cap, and Small-Cap Categories", "Sectoral Indices and Weightages"]
-      },
-      {
-        "id": "m1-5",
-        "title": "Corporate Actions & Fundamentals",
-        "submodules": ["Dividends, Stock Splits, and Bonus Issues", "Reading Basic Balance Sheets", "Understanding P/E Ratio and EPS"]
-      },
-      {
-        "id": "m1-6",
-        "title": "The Settlement Loop",
-        "submodules": ["T+1 Settlement Cycle Mechanics", "Role of Clearing Corporations", "Dematerialization & Depository Participants (NSDL/CDSL)"]
+        "submodules": [
+          {
+            "id": "sm1-2-1",
+            "title": "Line vs Candlestick Basics",
+            "intro": "Visualizing asset prices through professional charts.",
+            "content": "While line charts only show closing prices, Japanese candlesticks provide four critical data points for any timeframe: Open, High, Low, and Close (OHLC).",
+            "videoUrl": ""
+          }
+        ]
       }
     ]
   },
@@ -48,22 +58,15 @@
       {
         "id": "m2-1",
         "title": "Core Price Action Concepts",
-        "submodules": ["Identifying Trends (Higher Highs & Lower Lows)", "Drawing Accurate Support & Resistance Lines", "Trendlines and Channels Execution"]
-      },
-      {
-        "id": "m2-2",
-        "title": "Advanced Candlestick Patterns",
-        "submodules": ["Reversal Patterns (Hammer, Shooting Star)", "Continuation Patterns", "Multi-Candle Analysis (Engulfing, Morning Star)"]
-      },
-      {
-        "id": "m2-3",
-        "title": "Mathematical Indicators",
-        "submodules": ["Moving Averages (SMA vs EMA)", "RSI (Relative Strength Index) Divergences", "MACD & Bollinger Bands Integration"]
-      },
-      {
-        "id": "m2-4",
-        "title": "Volume Profile Analysis",
-        "submodules": ["Volume Price Trend Validation", "Breakout Confirmation Rules", "Institutional Accumulation vs Distribution Signals"]
+        "submodules": [
+          {
+            "id": "sm2-1-1",
+            "title": "Identifying Market Trends",
+            "intro": "The trend is your friend. Learn how to map higher highs and lower lows.",
+            "content": "An uptrend is defined by a sequence of higher highs and higher lows. A downtrend consists of lower highs and lower lows. Spotting these early prevents you from fighting the broader institutional momentum.",
+            "videoUrl": "https://www.youtube.com/embed/placeholder3"
+          }
+        ]
       }
     ]
   },
@@ -77,17 +80,15 @@
       {
         "id": "m3-1",
         "title": "Position Sizing Mathematics",
-        "submodules": ["The 1% Risk Per Trade Rule", "Calculating Lot Sizes Based on Stop-Loss Distance", "Risk-to-Reward Ratio Calculations"]
-      },
-      {
-        "id": "m3-2",
-        "title": "Drawdown Control & Allocation",
-        "subdown": ["Maximum Portfolio Drawdown Thresholds", "Diversification Limits Across Sectors", "Correlated Asset Risk Assessment"]
-      },
-      {
-        "id": "m3-3",
-        "title": "Hedging Strategies",
-        "submodules": ["Introduction to Index Options Strategy", "Using Protective Puts", "Beta Weighting Your Portfolio"]
+        "submodules": [
+          {
+            "id": "sm3-1-1",
+            "title": "The 1% Risk Management Rule",
+            "intro": "Protect your capital sandbox from devastating blowouts.",
+            "content": "Never risk more than 1% of your total account balance on a single trade. If your account has ₹1,00,000, your maximum stop-loss invalidation amount should never exceed ₹1,000.",
+            "videoUrl": ""
+          }
+        ]
       }
     ]
   }
