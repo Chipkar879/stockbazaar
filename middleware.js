@@ -1,29 +1,64 @@
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
-  // 1. Grab all active cookies passing through the request header
-  const allCookies = request.cookies.getAll();
-  
-  // 2. Comprehensive structural check: Look for ANY Supabase or authentication marker
-  const hasAuthMarker = allCookies.some(cookie => 
-    cookie.name.startsWith('sb-') || 
-    cookie.name.includes('auth') || 
-    cookie.name.includes('token') ||
-    cookie.name.includes('session')
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // 1. Initialize official Supabase SSR Client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value, options)
+          );
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
   );
 
-  // 3. STRICT LOCKOUT: If no auth markers exist at all, force redirect to the local /signup folder
-  if (!hasAuthMarker) {
-    return NextResponse.redirect(new URL('/signup', request.url));
+  // 2. Safely unpack session tokens directly from the auth engine
+  const { data: { session } } = await supabase.auth.getSession();
+  const currentPath = request.nextUrl.pathname;
+
+  // 3. INFINITE LOOP GUARD: If they don't have a session, and they are NOT already going to /signup, block them
+  if (!session && currentPath !== '/signup') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/signup';
+    return NextResponse.redirect(url);
   }
 
-  // 4. If cookies exist, let them through to the dashboard pages safely
-  return NextResponse.next();
+  // 4. OPPOSITE GUARD: If they ARE logged in, don't let them stay stuck on the signup screen
+  if (session && currentPath === '/signup') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/simulator'; // Forward to workspace dashboard
+    return NextResponse.redirect(url);
+  }
+
+  return response;
 }
 
-// 5. THE EXPLICIT SECURITY MATCHER
+// 5. STRICT SECURITY MATCHER MATRIX
 export const config = {
   matcher: [
+    '/signup',
     '/simulator',
     '/simulator/:path*',
     '/courses',
