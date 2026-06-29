@@ -17,7 +17,6 @@ function SignupForm() {
     setIsLogin(searchParams.get('mode') === 'login');
   }, [searchParams]);
 
-  // Dynamically pull classes created by coordinator when school code changes
   const handleSchoolCodeBlur = async (code) => {
     if (!code) return;
     const { data, error } = await supabase
@@ -41,7 +40,11 @@ function SignupForm() {
           password: formData.password,
         });
         if (error) throw error;
-        window.location.href = '/';
+        
+        // Give the browser 500ms to register cookies before shifting routes
+        setTimeout(() => {
+          window.location.href = '/simulator';
+        }, 500);
       } else {
         let uploadedUrl = null;
 
@@ -78,15 +81,29 @@ function SignupForm() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Fault in submission.');
 
+        // FIX: Automatically sign the user in directly after successful API creation 
+        // to establish session cookies right away!
+        const { error: autoLoginError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (autoLoginError) throw autoLoginError;
+
         setStatus({ 
           loading: false, 
           message: accountType === 'teacher' 
             ? 'Account built! Coordinator approval pending.' 
             : accountType === 'student'
             ? 'Success! Awaiting class manager approval to activate your portfolio.'
-            : 'Account active! You can now log in and start trading in your ₹50,000 sandbox portfolio.', 
+            : 'Account active! Logging you into your ₹50,000 sandbox portfolio...', 
           success: true 
         });
+
+        // Route them inside safely after cookies settle
+        setTimeout(() => {
+          window.location.href = '/simulator';
+        }, 800);
       }
     } catch (err) {
       setStatus({ loading: false, message: err.message, success: false });

@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
-  // 1. Get all cookies from the incoming request header
   const allCookies = request.cookies.getAll();
-
-  // 2. Look for any active Supabase authentication token cookie
-  // Supabase stores chunks starting with "sb-" followed by your project configuration reference keys
-  const hasSupabaseSession = allCookies.some(cookie => 
-    cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
-  );
-
   const currentPath = request.nextUrl.pathname;
 
-  // 3. INFINITE LOOP GUARD: If no active session cookie is found, force bounce to /signup
-  if (!hasSupabaseSession && currentPath !== '/signup') {
+  // 1. Broad Check: See if ANY Supabase session cookie exists
+  // Supabase cookies look like 'sb-xxxx-auth-token' or 'sb-access-token'
+  const hasAuthCookie = allCookies.some(cookie => 
+    cookie.name.startsWith('sb-') || 
+    cookie.name.includes('auth') || 
+    cookie.name.includes('token')
+  );
+
+  // 2. STAGE 1 LOCKOUT: If no session cookie is found, and they aren't on /signup, send them to /signup
+  if (!hasAuthCookie && currentPath !== '/signup') {
     const url = request.nextUrl.clone();
     url.pathname = '/signup';
     return NextResponse.redirect(url);
   }
 
-  // 4. OPPOSITE GUARD: If they are logged in, don't let them stay stuck on the signup screen
-  if (hasSupabaseSession && currentPath === '/signup') {
+  // 3. STAGE 2 SAFETY: If they ARE logged in, don't trap them on the signup page. Let them go to the simulator!
+  if (hasAuthCookie && currentPath === '/signup') {
     const url = request.nextUrl.clone();
     url.pathname = '/simulator';
     return NextResponse.redirect(url);
@@ -29,7 +29,6 @@ export async function middleware(request) {
   return NextResponse.next();
 }
 
-// 5. THE EXPLICIT SECURITY MATCHER
 export const config = {
   matcher: [
     '/signup',
