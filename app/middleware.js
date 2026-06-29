@@ -8,7 +8,7 @@ export async function middleware(request) {
     },
   });
 
-  // 1. Initialize Supabase Client for Middleware
+  // 1. Initialize Supabase Client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -34,14 +34,12 @@ export async function middleware(request) {
     }
   );
 
-  // 2. Check if user is logged in
+  // 2. Fetch active authentication state
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const url = new URL(request.url);
-
-  // 3. If NO session exists, redirect them to the login page
+  // 3. If NO active login token exists, bounce them to the login screen instantly
   if (!session) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -49,12 +47,16 @@ export async function middleware(request) {
   return response;
 }
 
-// 4. Specify exactly which routes require a mandatory account
+// 4. THE MATCHER MATRIX: Explicitly lock every target gateway
 export const config = {
   matcher: [
-    '/simulator/:path*',
-    '/courses/:path*',
-    '/quiz/:path*',
-    '/leaderboard/:path*',
+    '/simulator',
+    '/simulator/:path*',       // Catches both simulators and sub-paths
+    '/courses',
+    '/courses/:path*',         // Dynamic modules layout
+    '/quiz',
+    '/quiz/:path*',            // Daily quiz routes
+    '/leaderboard',
+    '/leaderboard/:path*',     // Blocks anonymous leaderboard viewing entirely
   ],
 };
