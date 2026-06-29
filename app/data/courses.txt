@@ -1,21 +1,94 @@
 [
   {
-    "id": 1,
-    "title": "Module 1: What is a Stock?",
-    "duration": "10 mins",
-    "status": "Completed",
-    "contentType": "text",
-    "content": "A stock represents a tiny piece of ownership in a company. When you buy a share of a company like Apple or Reliance, you become a shareholder! Businesses sell stocks to raise money to grow, and you profit if the company succeeds.",
-    "activity": "Write down 3 public companies you interact with daily."
+    "id": "track-1",
+    "trackNumber": "01",
+    "title": "Market Foundations",
+    "description": "Understand technical asset pricing loops, stock charts, order structures, and index operations across primary exchanges.",
+    "level": "Beginner",
+    "modules": [
+      {
+        "id": "m1-1",
+        "title": "Introduction to Capital Markets",
+        "submodules": ["Primary vs Secondary Markets", "Role of SEBI & Regulatory Framework", "How Stock Exchanges (NSE & BSE) Function"]
+      },
+      {
+        "id": "m1-2",
+        "title": "Mechanics of a Stock Chart",
+        "submodules": ["Line, Bar, and Candlestick Basics", "Understanding OHLC (Open, High, Low, Close)", "Timeframes: Intraday vs Swing Charts"]
+      },
+      {
+        "id": "m1-3",
+        "title": "Order Types & Market Execution",
+        "submodules": ["Market Orders vs Limit Orders", "Stop-Loss and Target Orders", "Understanding the Order Book & Liquidity"]
+      },
+      {
+        "id": "m1-4",
+        "title": "Index Operations & Market Cap",
+        "submodules": ["How Nifty 50 & Sensex are Calculated", "Large-Cap, Mid-Cap, and Small-Cap Categories", "Sectoral Indices and Weightages"]
+      },
+      {
+        "id": "m1-5",
+        "title": "Corporate Actions & Fundamentals",
+        "submodules": ["Dividends, Stock Splits, and Bonus Issues", "Reading Basic Balance Sheets", "Understanding P/E Ratio and EPS"]
+      },
+      {
+        "id": "m1-6",
+        "title": "The Settlement Loop",
+        "submodules": ["T+1 Settlement Cycle Mechanics", "Role of Clearing Corporations", "Dematerialization & Depository Participants (NSDL/CDSL)"]
+      }
+    ]
   },
   {
-    "id": 2,
-    "title": "Module 2: Risk & Diversification",
-    "duration": "15 mins",
-    "status": "In Progress",
-    "contentType": "video",
-    "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    "content": "Diversification means spreading your money across different investments so one bad event won't erase your savings. Think of it as not putting all your eggs in one single basket.",
-    "activity": "Try out the Quick Quiz on the right side of your dashboard to test your diversification understanding!"
+    "id": "track-2",
+    "trackNumber": "02",
+    "title": "Technical Analysis",
+    "description": "Map patterns using support levels, moving averages, and volume indicators to execute quantitative simulator mock plays.",
+    "level": "Intermediate",
+    "modules": [
+      {
+        "id": "m2-1",
+        "title": "Core Price Action Concepts",
+        "submodules": ["Identifying Trends (Higher Highs & Lower Lows)", "Drawing Accurate Support & Resistance Lines", "Trendlines and Channels Execution"]
+      },
+      {
+        "id": "m2-2",
+        "title": "Advanced Candlestick Patterns",
+        "submodules": ["Reversal Patterns (Hammer, Shooting Star)", "Continuation Patterns", "Multi-Candle Analysis (Engulfing, Morning Star)"]
+      },
+      {
+        "id": "m2-3",
+        "title": "Mathematical Indicators",
+        "submodules": ["Moving Averages (SMA vs EMA)", "RSI (Relative Strength Index) Divergences", "MACD & Bollinger Bands Integration"]
+      },
+      {
+        "id": "m2-4",
+        "title": "Volume Profile Analysis",
+        "submodules": ["Volume Price Trend Validation", "Breakout Confirmation Rules", "Institutional Accumulation vs Distribution Signals"]
+      }
+    ]
+  },
+  {
+    "id": "track-3",
+    "trackNumber": "03",
+    "title": "Portfolio Risk Management",
+    "description": "Mitigate drawdown via position sizing models, strict asset tracking ratios, and dynamic algorithmic hedging criteria.",
+    "level": "Advanced",
+    "modules": [
+      {
+        "id": "m3-1",
+        "title": "Position Sizing Mathematics",
+        "submodules": ["The 1% Risk Per Trade Rule", "Calculating Lot Sizes Based on Stop-Loss Distance", "Risk-to-Reward Ratio Calculations"]
+      },
+      {
+        "id": "m3-2",
+        "title": "Drawdown Control & Allocation",
+        "subdown": ["Maximum Portfolio Drawdown Thresholds", "Diversification Limits Across Sectors", "Correlated Asset Risk Assessment"]
+      },
+      {
+        "id": "m3-3",
+        "title": "Hedging Strategies",
+        "submodules": ["Introduction to Index Options Strategy", "Using Protective Puts", "Beta Weighting Your Portfolio"]
+      }
+    ]
   }
 ]

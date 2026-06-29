@@ -75,7 +75,7 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-500">
           <Link href="/" className={`pb-0.5 transition-all ${pathname === '/' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Home</Link>
           <Link href="/simulator" className={`pb-0.5 transition-all ${pathname === '/simulator' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Simulator</Link>
-          <Link href="/courses" className={`pb-0.5 transition-all ${pathname === '/courses' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Courses</Link>
+          <Link href="/courses" className={`pb-0.5 transition-all ${pathname === '/courses' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Modules</Link>
           <Link href="/quiz" className={`pb-0.5 transition-all ${pathname === '/quiz' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Daily Quiz</Link>
           <Link href="/leaderboard" className={`pb-0.5 transition-all ${pathname === '/leaderboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Leaderboard</Link>
           <Link href="/pricing" className={`pb-0.5 transition-all ${pathname === '/pricing' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Pricing</Link>
@@ -120,7 +120,7 @@ export default function Navbar() {
       <div className={`absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-md p-6 flex flex-col gap-4 text-sm font-bold text-slate-600 md:hidden transition-all duration-300 origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
         <Link href="/" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Home</Link>
         <Link href="/simulator" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/simulator' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Simulator</Link>
-        <Link href="/courses" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/courses' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Courses</Link>
+        <Link href="/courses" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/courses' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Modules</Link>
         <Link href="/quiz" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/quiz' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Daily Quiz</Link>
         <Link href="/leaderboard" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/leaderboard' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Leaderboard</Link>
         <Link href="/pricing" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/pricing' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Pricing</Link>
