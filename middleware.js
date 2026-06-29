@@ -1,62 +1,34 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+  // 1. Grab all active cookies passing through the request header
+  const allCookies = request.cookies.getAll();
+  
+  // 2. Scan to see if any Supabase authentication cookies are present
+  const hasAuthCookie = allCookies.some(cookie => cookie.name.startsWith('sb-'));
 
-  // 1. Initialize Supabase Client
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value, options)
-          );
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+  // 3. Fallback check for standard explicit session tokens
+  const hasSessionToken = request.cookies.has('sb-access-token') || request.cookies.has('supabase-auth-token');
 
-  // 2. Fetch active authentication state
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // 3. If NO active login token exists, bounce them to the login screen instantly
-  if (!session) {
+  // 4. STRICT LOCKOUT: If no auth markers exist, force redirect to /login
+  if (!hasAuthCookie && !hasSessionToken) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return response;
+  // 5. If cookies exist, let them through to the dashboard pages
+  return NextResponse.next();
 }
 
-// 4. THE MATCHER MATRIX: Explicitly lock every target gateway
+// 6. THE EXPLICIT SECURITY MATCHER
 export const config = {
   matcher: [
     '/simulator',
-    '/simulator/:path*',       // Catches both simulators and sub-paths
+    '/simulator/:path*',
     '/courses',
-    '/courses/:path*',         // Dynamic modules layout
+    '/courses/:path*',
     '/quiz',
-    '/quiz/:path*',            // Daily quiz routes
+    '/quiz/:path*',
     '/leaderboard',
-    '/leaderboard/:path*',     // Blocks anonymous leaderboard viewing entirely
+    '/leaderboard/:path*',
   ],
 };
