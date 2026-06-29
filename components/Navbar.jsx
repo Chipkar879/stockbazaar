@@ -94,15 +94,18 @@ export default function Navbar() {
               Sign In
             </Link>
           ) : (
-            <div className="relative group cursor-pointer">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[2px] shadow-sm transition-transform active:scale-95">
-                <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center">
-                  <span className="text-[11px] font-black tracking-wider bg-gradient-to-tr from-blue-500 to-emerald-400 bg-clip-text text-transparent">
-                    {initials}
-                  </span>
-                </div>
+            /* CLICKABLE INITIALS AVATAR BUTTON */
+            <Link
+              href="/profile"
+              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[2px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none animate-fadeIn"
+              onClick={closeMenu}
+            >
+              <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center hover:bg-slate-50/50 transition-colors">
+                <span className="text-[11px] font-black tracking-wider bg-gradient-to-tr from-blue-500 to-emerald-400 bg-clip-text text-transparent">
+                  {initials}
+                </span>
               </div>
-            </div>
+            </Link>
           )}
 
           {/* Toggle Button */}
@@ -124,6 +127,12 @@ export default function Navbar() {
         <Link href="/quiz" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/quiz' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Daily Quiz</Link>
         <Link href="/leaderboard" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/leaderboard' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Leaderboard</Link>
         <Link href="/pricing" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/pricing' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Pricing</Link>
+        
+        {user && (
+          <Link href="/profile" onClick={closeMenu} className={`p-2 rounded-xl border-t border-slate-100 mt-2 text-blue-500 ${pathname === '/profile' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+            My Profile ({initials})
+          </Link>
+        )}
       </div>
     </header>
   );
