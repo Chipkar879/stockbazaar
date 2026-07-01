@@ -3,8 +3,17 @@ import { NextResponse } from 'next/server';
 export async function middleware(request) {
   const allCookies = request.cookies.getAll();
   const currentPath = request.nextUrl.pathname;
+  const userAgent = request.headers.get('user-agent') || '';
 
-  // 1. Check if ANY authentication-related cookie exists in the headers
+  // 1. SEARCH ENGINE PASS-THROUGH: Never block search crawlers from fetching pages
+  if (
+    userAgent.toLowerCase().includes('googlebot') || 
+    userAgent.toLowerCase().includes('bingbot')
+  ) {
+    return NextResponse.next();
+  }
+
+  // 2. Scan to see if any authentication-related session cookie exists
   const hasAuthSession = allCookies.some(cookie => 
     cookie.name.startsWith('sb-') || 
     cookie.name.toLowerCase().includes('auth') || 
@@ -12,21 +21,16 @@ export async function middleware(request) {
     cookie.name.toLowerCase().includes('session')
   );
 
-  // 2. KICK OUT UNAUTHENTICATED USERS: 
-  // If they have no session cookies and are trying to access protected paths, send them to signup
+  // 3. Kick unauthenticated users away from protected dashboard directories
   if (!hasAuthSession && currentPath !== '/signup') {
     const url = request.nextUrl.clone();
     url.pathname = '/signup';
     return NextResponse.redirect(url);
   }
 
-  // 3. ALLOW LOGGED IN USERS THROUGH:
-  // If they have session cookies, let them view the page normally.
-  // Note: We removed the strict redirect away from '/signup' to prevent loop traps!
   return NextResponse.next();
 }
 
-// 4. THE EXPLICIT MATCHING GATEWAYS
 export const config = {
   matcher: [
     '/signup',
