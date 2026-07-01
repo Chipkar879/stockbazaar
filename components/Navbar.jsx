@@ -94,14 +94,14 @@ export default function Navbar() {
               Sign In
             </Link>
           ) : (
-            /* CLICKABLE INITIALS AVATAR BUTTON */
+            /* CLICKABLE INITIALS AVATAR BUTTON - REWRITTEN FOR STYLING FIXES */
             <Link
               href="/profile"
-              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[2px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none animate-fadeIn"
+              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[2px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none outline-none focus:outline-none focus:ring-0 [-webkit-tap-highlight-color:transparent] animate-fadeIn"
               onClick={closeMenu}
             >
-              <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center hover:bg-slate-50/50 transition-colors">
-                <span className="text-[11px] font-black tracking-wider bg-gradient-to-tr from-blue-500 to-emerald-400 bg-clip-text text-transparent">
+              <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center hover:bg-slate-50/80 transition-colors outline-none focus:outline-none">
+                <span className="text-[11px] font-black tracking-wider text-slate-700 select-none">
                   {initials}
                 </span>
               </div>
