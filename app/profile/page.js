@@ -61,21 +61,39 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleSignOut = async () => {
-  // 1. Clear Supabase memory state
-  await supabase.auth.signOut();
-  
-  // 2. Wipe out any auth cookies written to the browser
-  if (typeof document !== 'undefined') {
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c
-        .replace(/^ +/, "")
-        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-    });
-  }
+  try {
+    // 1. Tell Supabase to kill the active session on the backend
+    await supabase.auth.signOut();
+    
+    if (typeof window !== 'undefined') {
+      // 2. Clear browser memory completely
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+      
+      // 3. TARGETED PATH PURGE: Explicitly destroy cookies across ALL protected directories
+      const cookies = document.cookie.split(";");
+      const targetPaths = ['/', '/simulator', '/quiz', '/courses', '/leaderboard'];
 
-  // 3. Kick them to the homepage or signup screen
-  router.push('/');
-  };
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        
+        // Loop through every path and force-expire the token
+        targetPaths.forEach(path => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path};`;
+          // Also handle absolute secure domain flags
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}; SameSite=Lax; Secure`;
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Signout security loop crash:", err);
+  } finally {
+    // 4. Force a hard, clean-slate page window reload straight to the signup screen
+    window.location.href = '/signup';
+  }
+  };};
 
   if (loading) {
     return (
@@ -149,4 +167,3 @@ export default function ProfilePage() {
       </div>
     </main>
   );
-}
