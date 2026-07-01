@@ -61,8 +61,20 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
+  // 1. Clear Supabase memory state
+  await supabase.auth.signOut();
+  
+  // 2. Wipe out any auth cookies written to the browser
+  if (typeof document !== 'undefined') {
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+  }
+
+  // 3. Kick them to the homepage or signup screen
+  router.push('/');
   };
 
   if (loading) {
