@@ -13,8 +13,16 @@ function SignupForm() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', schoolCode: '', specificClassId: '' });
   const [status, setStatus] = useState({ loading: false, message: '', success: false });
 
+  // Forgot Password System States
+  const [isForgotMode, setIsForgotMode] = useState(false);
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [targetEmail, setTargetEmail] = useState('');
+  const [confirmEmailInput, setConfirmEmailInput] = useState('');
+
   useEffect(() => {
     setIsLogin(searchParams.get('mode') === 'login');
+    // Reset forgot password sub-views if mode changes
+    setIsForgotMode(false);
   }, [searchParams]);
 
   const handleSchoolCodeBlur = async (code) => {
@@ -26,6 +34,54 @@ function SignupForm() {
     
     if (!error && data) {
       setAvailableClasses(data);
+    }
+  };
+
+  // Triggers the masking step when "Forgot Password?" is selected
+  const initForgotPasswordFlow = () => {
+    const rawEmail = formData.email.trim();
+    if (!rawEmail || !rawEmail.includes('@')) {
+      setStatus({ loading: false, message: 'Please input your email address above first so we can mask it.', success: false });
+      return;
+    }
+
+    const [username, domain] = rawEmail.split('@');
+    if (username.length <= 2) {
+      setMaskedEmail(`${username[0]}***@${domain}`);
+    } else {
+      setMaskedEmail(`${username[0]}${'*'.repeat(username.length - 2)}${username[username.length - 1]}@${domain}`);
+    }
+    
+    setTargetEmail(rawEmail.toLowerCase());
+    setIsForgotMode(true);
+    setStatus({ loading: false, message: '', success: false });
+  };
+
+  // Handles sending the secure password reset link via Supabase
+  const handlePasswordResetRequest = async (e) => {
+    e.preventDefault();
+    setStatus({ loading: true, message: '', success: false });
+
+    if (confirmEmailInput.trim().toLowerCase() !== targetEmail) {
+      setStatus({ loading: false, message: 'The confirmation email handle does not match the masked balance credential.', success: false });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
+
+      if (error) throw error;
+
+      setStatus({
+        loading: false,
+        message: 'Security link dispatched! Please check your mailbox to update your password credentials.',
+        success: true
+      });
+      setConfirmEmailInput('');
+    } catch (err) {
+      setStatus({ loading: false, message: err.message, success: false });
     }
   };
 
@@ -41,7 +97,6 @@ function SignupForm() {
         });
         if (error) throw error;
         
-        // Give the browser 500ms to register cookies before shifting routes
         setTimeout(() => {
           window.location.href = '/simulator';
         }, 500);
@@ -81,8 +136,6 @@ function SignupForm() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Fault in submission.');
 
-        // FIX: Automatically sign the user in directly after successful API creation 
-        // to establish session cookies right away!
         const { error: autoLoginError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
@@ -100,7 +153,6 @@ function SignupForm() {
           success: true 
         });
 
-        // Route them inside safely after cookies settle
         setTimeout(() => {
           window.location.href = '/simulator';
         }, 800);
@@ -109,6 +161,55 @@ function SignupForm() {
       setStatus({ loading: false, message: err.message, success: false });
     }
   };
+
+  // RENDER INTERACTIVE PASSWORD RESET FORM OVERLAY
+  if (isLogin && isForgotMode) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6 animate-fadeInFast">
+        <div className="text-center space-y-1">
+          <h1 className="font-black text-2xl text-slate-950">Security Reset Matrix</h1>
+          <p className="text-xs text-slate-500">Confirm identity for target payload: <span className="text-blue-500 font-mono font-bold">{maskedEmail}</span></p>
+        </div>
+
+        <form onSubmit={handlePasswordResetRequest} className="space-y-4">
+          <div>
+            <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Verify Full Email Handle</label>
+            <input 
+              type="email" 
+              required 
+              value={confirmEmailInput}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium" 
+              placeholder="Type your email exactly to unlock" 
+              onChange={(e) => setConfirmEmailInput(e.target.value)} 
+            />
+          </div>
+
+          {status.message && (
+            <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+              {status.message}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button 
+              type="button" 
+              onClick={() => { setIsForgotMode(false); setStatus({ message: '', success: false, loading: false }); }}
+              className="w-1/3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+            >
+              Back
+            </button>
+            <button 
+              type="submit" 
+              disabled={status.loading || !confirmEmailInput} 
+              className="w-2/3 py-3 bg-blue-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
+            >
+              {status.loading ? 'Dispatching...' : 'Dispatch Token Link'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
@@ -140,7 +241,7 @@ function SignupForm() {
 
         <div>
           <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Email Address</label>
-          <input type="email" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="alex@campus.edu" onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+          <input type="email" required value={formData.email} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="alex@campus.edu" onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
         </div>
 
         {!isLogin && (accountType === 'student' || accountType === 'teacher') && (
@@ -173,8 +274,19 @@ function SignupForm() {
         )}
 
         <div>
-          <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Security Password</label>
-          <input type="password" required minLength={6} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="••••••••" onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider">Security Password</label>
+            {isLogin && (
+              <button 
+                type="button" 
+                onClick={initForgotPasswordFlow}
+                className="text-[10px] font-bold text-blue-500 hover:underline focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              >
+                Forgot Password?
+              </button>
+            )}
+          </div>
+          <input type="password" required={!isForgotMode} minLength={6} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="••••••••" onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
         </div>
 
         {status.message && (
