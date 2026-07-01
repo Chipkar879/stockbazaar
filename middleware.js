@@ -4,22 +4,20 @@ export async function middleware(request) {
   const allCookies = request.cookies.getAll();
   const currentPath = request.nextUrl.pathname;
 
-  // 1. Broad Check: See if ANY Supabase session cookie exists
-  // Supabase cookies look like 'sb-xxxx-auth-token' or 'sb-access-token'
+  // Scan to see if the cookie written by our custom storage adapter is present
   const hasAuthCookie = allCookies.some(cookie => 
-    cookie.name.startsWith('sb-') || 
-    cookie.name.includes('auth') || 
-    cookie.name.includes('token')
+    cookie.name.includes('supabase-auth-token') || 
+    cookie.name.startsWith('sb-')
   );
 
-  // 2. STAGE 1 LOCKOUT: If no session cookie is found, and they aren't on /signup, send them to /signup
+  // 1. If not logged in and trying to view restricted routes, kick to signup
   if (!hasAuthCookie && currentPath !== '/signup') {
     const url = request.nextUrl.clone();
     url.pathname = '/signup';
     return NextResponse.redirect(url);
   }
 
-  // 3. STAGE 2 SAFETY: If they ARE logged in, don't trap them on the signup page. Let them go to the simulator!
+  // 2. If logged in and trying to go to signup, forward to simulator dashboard
   if (hasAuthCookie && currentPath === '/signup') {
     const url = request.nextUrl.clone();
     url.pathname = '/simulator';
