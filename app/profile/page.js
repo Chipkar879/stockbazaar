@@ -21,7 +21,6 @@ export default function ProfilePage() {
           return;
         }
 
-        // Fetch name from your profiles database table
         const { data: dbProfile } = await supabase
           .from('profiles')
           .select('name, created_at')
@@ -38,7 +37,6 @@ export default function ProfilePage() {
           day: 'numeric'
         });
 
-        // Compute base avatar characters
         const nameParts = accountName.trim().split(/\s+/);
         const userInitials = nameParts.length > 1 
           ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
@@ -61,39 +59,33 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleSignOut = async () => {
-  try {
-    // 1. Tell Supabase to kill the active session on the backend
-    await supabase.auth.signOut();
-    
-    if (typeof window !== 'undefined') {
-      // 2. Clear browser memory completely
-      window.localStorage.clear();
-      window.sessionStorage.clear();
+    try {
+      await supabase.auth.signOut();
       
-      // 3. TARGETED PATH PURGE: Explicitly destroy cookies across ALL protected directories
-      const cookies = document.cookie.split(";");
-      const targetPaths = ['/', '/simulator', '/quiz', '/courses', '/leaderboard'];
-
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i];
-        const eqPos = cookie.indexOf("=");
-        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+      if (typeof window !== 'undefined') {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
         
-        // Loop through every path and force-expire the token
-        targetPaths.forEach(path => {
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path};`;
-          // Also handle absolute secure domain flags
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}; SameSite=Lax; Secure`;
-        });
+        const cookies = document.cookie.split(";");
+        const targetPaths = ['/', '/simulator', '/quiz', '/courses', '/leaderboard'];
+
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i];
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          
+          targetPaths.forEach(path => {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path};`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${path}; SameSite=Lax; Secure`;
+          });
+        }
       }
+    } catch (err) {
+      console.error("Signout security loop crash:", err);
+    } finally {
+      window.location.href = '/signup';
     }
-  } catch (err) {
-    console.error("Signout security loop crash:", err);
-  } finally {
-    // 4. Force a hard, clean-slate page window reload straight to the signup screen
-    window.location.href = '/signup';
-  }
-  };};
+  };
 
   if (loading) {
     return (
@@ -113,12 +105,10 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[#F8FAFC]">
       <Navbar />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-8 animate-fadeIn">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-8">
         
-        {/* Core Identity Banner Component */}
         <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Visual Avatar Bubble Frame */}
             <div className="w-20 h-20 bg-gradient-to-tr from-blue-500 to-emerald-400 text-white rounded-2xl font-poppins font-black text-3xl flex items-center justify-center shadow-sm select-none">
               {initials}
             </div>
@@ -141,7 +131,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Detailed Account Dossier Fields Grid */}
         <section className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
           <h2 className="font-poppins font-bold text-xl text-slate-800 border-b border-slate-100 pb-4">
             Security Dossier Settings
@@ -167,3 +156,4 @@ export default function ProfilePage() {
       </div>
     </main>
   );
+}
