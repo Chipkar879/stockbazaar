@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +13,14 @@ function SignupForm() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', schoolCode: '', specificClassId: '' });
   const [status, setStatus] = useState({ loading: false, message: '', success: false });
 
+  // Robot Interactive States
+  const [mood, setMood] = useState('idle'); // idle, watching, happy, excited, pressed, success
+  const [isTurned, setIsTurned] = useState(false);
+  const [speechText, setSpeechText] = useState("Greetings trader. I am Volt, guardian of Bull Run.");
+  const [eyePos, setEyePos] = useState({ x: 0, y: 0 });
+  const [headTilt, setHeadTilt] = useState({ rx: 0, ry: 0 });
+  const [passScore, setPassScore] = useState(0);
+
   // Forgot Password System States
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [maskedEmail, setMaskedEmail] = useState('');
@@ -21,9 +29,29 @@ function SignupForm() {
 
   useEffect(() => {
     setIsLogin(searchParams.get('mode') === 'login');
-    // Reset forgot password sub-views if mode changes
     setIsForgotMode(false);
   }, [searchParams]);
+
+  // Speech Helper
+  const say = (text) => setSpeechText(text);
+
+  // Head and Eye Tracking
+  const followInputLength = (valLength) => {
+    const ratio = Math.min(valLength / 22, 1);
+    setEyePos({ x: -6 + 12 * ratio, y: 5 });
+    setHeadTilt({ rx: -8, ry: -5 + 10 * ratio });
+  };
+
+  const handlePasswordInput = (val) => {
+    setFormData((prev) => ({ ...prev, password: val }));
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[a-z]/.test(val) && /[A-Z]/.test(val)) score++;
+    if (/\d/.test(val)) score++;
+    if (/[^a-zA-Z0-9]/.test(val)) score++;
+    if (val.length > 0 && score === 0) score = 1;
+    setPassScore(score);
+  };
 
   const handleSchoolCodeBlur = async (code) => {
     if (!code) return;
@@ -34,14 +62,15 @@ function SignupForm() {
     
     if (!error && data) {
       setAvailableClasses(data);
+      say(`Found ${data.length} classroom tracks for hub ${code.toUpperCase()}!`);
     }
   };
 
-  // Triggers the masking step when "Forgot Password?" is selected
   const initForgotPasswordFlow = () => {
     const rawEmail = formData.email.trim();
     if (!rawEmail || !rawEmail.includes('@')) {
       setStatus({ loading: false, message: 'Please input your email address above first so we can mask it.', success: false });
+      say("Enter your email address above so I can compute the security mask.");
       return;
     }
 
@@ -55,15 +84,16 @@ function SignupForm() {
     setTargetEmail(rawEmail.toLowerCase());
     setIsForgotMode(true);
     setStatus({ loading: false, message: '', success: false });
+    say("Security override initialized. Type your full email to unlock token dispatch.");
   };
 
-  // Handles sending the secure password reset link via Supabase
   const handlePasswordResetRequest = async (e) => {
     e.preventDefault();
     setStatus({ loading: true, message: '', success: false });
 
     if (confirmEmailInput.trim().toLowerCase() !== targetEmail) {
-      setStatus({ loading: false, message: 'The confirmation email handle does not match the masked balance credential.', success: false });
+      setStatus({ loading: false, message: 'The confirmation email handle does not match.', success: false });
+      say("Access denied! Email handle mismatch detected.");
       return;
     }
 
@@ -76,18 +106,22 @@ function SignupForm() {
 
       setStatus({
         loading: false,
-        message: 'Security link dispatched! Please check your mailbox to update your password credentials.',
+        message: 'Security link dispatched! Please check your mailbox.',
         success: true
       });
+      setMood('success');
+      say("Token dispatched! Check your mailbox to reset credentials.");
       setConfirmEmailInput('');
     } catch (err) {
       setStatus({ loading: false, message: err.message, success: false });
+      say("Dispatch fault encountered. Verify your configuration.");
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ loading: true, message: '', success: false });
+    setMood('pressed');
 
     try {
       if (isLogin) {
@@ -97,9 +131,11 @@ function SignupForm() {
         });
         if (error) throw error;
         
+        setMood('success');
+        say(`Credentials verified! Access granted, ${formData.email.split('@')[0]}.`);
         setTimeout(() => {
           window.location.href = '/simulator';
-        }, 500);
+        }, 800);
       } else {
         let uploadedUrl = null;
 
@@ -143,169 +179,300 @@ function SignupForm() {
 
         if (autoLoginError) throw autoLoginError;
 
+        setMood('success');
+        say(`Account registered! Initializing ₹50,000 sandbox wallet.`);
+
         setStatus({ 
           loading: false, 
           message: accountType === 'teacher' 
             ? 'Account built! Coordinator approval pending.' 
             : accountType === 'student'
-            ? 'Success! Awaiting class manager approval to activate your portfolio.'
-            : 'Account active! Logging you into your ₹50,000 sandbox portfolio...', 
+            ? 'Success! Awaiting class manager approval to activate portfolio.'
+            : 'Account active! Logging you into your sandbox portfolio...', 
           success: true 
         });
 
         setTimeout(() => {
           window.location.href = '/simulator';
-        }, 800);
+        }, 1000);
       }
     } catch (err) {
       setStatus({ loading: false, message: err.message, success: false });
+      setMood('watching');
+      say("Access rejected! Please verify input credentials.");
     }
   };
 
-  // RENDER INTERACTIVE PASSWORD RESET FORM OVERLAY
-  if (isLogin && isForgotMode) {
-    return (
-      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6 animate-fadeInFast">
-        <div className="text-center space-y-1">
-          <h1 className="font-black text-2xl text-slate-950">Security Reset Matrix</h1>
-          <p className="text-xs text-slate-500">Confirm identity for target payload: <span className="text-blue-500 font-mono font-bold">{maskedEmail}</span></p>
-        </div>
-
-        <form onSubmit={handlePasswordResetRequest} className="space-y-4">
-          <div>
-            <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Verify Full Email Handle</label>
-            <input 
-              type="email" 
-              required 
-              value={confirmEmailInput}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium" 
-              placeholder="Type your email exactly to unlock" 
-              onChange={(e) => setConfirmEmailInput(e.target.value)} 
-            />
-          </div>
-
-          {status.message && (
-            <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
-              {status.message}
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <button 
-              type="button" 
-              onClick={() => { setIsForgotMode(false); setStatus({ message: '', success: false, loading: false }); }}
-              className="w-1/3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
-            >
-              Back
-            </button>
-            <button 
-              type="submit" 
-              disabled={status.loading || !confirmEmailInput} 
-              className="w-2/3 py-3 bg-blue-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-sm"
-            >
-              {status.loading ? 'Dispatching...' : 'Dispatch Token Link'}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  }
+  const passLabels = ['NOT LOOKING', 'WEAK SIGNAL', 'MODERATE', 'STRONG BULL', 'FORT KNOX'];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
-      <div className="text-center space-y-1">
-        <h1 className="font-black text-2xl text-slate-950">{isLogin ? 'Welcome Back' : 'Create Your Wallet'}</h1>
-        <p className="text-xs text-slate-500">{isLogin ? 'Access your workspace.' : 'Initialize your ₹50,000 sandbox portfolio.'}</p>
+    <div className="flex flex-col items-center justify-center relative">
+      
+      {/* ROBOT ANIMATED GUARD CONTAINER */}
+      <div className="relative mb-[-20px] z-10 flex flex-col items-center select-none">
+        
+        {/* SPEECH BUBBLE */}
+        <div className="mb-3 px-4 py-2 bg-[#0f0505] border-2 border-[#7a0000] text-slate-200 text-xs font-bold rounded-2xl shadow-xl max-w-[280px] text-center relative animate-fadeInFast">
+          <span>{speechText}</span>
+          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-[#7a0000]" />
+        </div>
+
+        {/* ANTENNA */}
+        <div className="flex flex-col items-center">
+          <div className={`w-3.5 h-3.5 rounded-full border-2 border-[#7a0000] transition-colors duration-300 ${mood === 'success' ? 'bg-emerald-500 animate-pulse' : mood === 'excited' ? 'bg-amber-400 animate-ping' : 'bg-[#ff3333]'}`} />
+          <div className="w-1 h-5 bg-[#7a0000] rounded-full" />
+        </div>
+
+        {/* 3D ROBOT HEAD */}
+        <div 
+          className="w-36 h-32 relative transition-transform duration-300 ease-out"
+          style={{
+            transform: `perspective(700px) rotateX(${headTilt.rx}deg) rotateY(${headTilt.ry}deg)`,
+          }}
+        >
+          {/* EARS */}
+          <div className="absolute top-10 -left-2.5 w-3.5 h-10 bg-[#1a0808] border-2 border-[#7a0000] rounded-lg" />
+          <div className="absolute top-10 -right-2.5 w-3.5 h-10 bg-[#1a0808] border-2 border-[#7a0000] rounded-lg" />
+
+          {/* HEAD SHELL */}
+          <div className={`w-full h-full bg-[#0f0505] border-2 border-[#7a0000] rounded-[32px] shadow-2xl relative overflow-hidden transition-transform duration-700 ${isTurned ? '[transform:rotateY(180deg)]' : ''}`}>
+            
+            {/* FRONT FACE (VISOR) */}
+            <div className={`absolute inset-0 p-4 flex flex-col items-center justify-center ${isTurned ? 'hidden' : 'block'}`}>
+              <div className="w-full h-full bg-black border border-[#2b0808] rounded-2xl flex flex-col items-center justify-center gap-3 relative overflow-hidden">
+                
+                {/* SCANNER LINE ANIMATION */}
+                <div className="absolute inset-x-0 h-[2px] bg-[#ff3333]/30 animate-pulse top-2" />
+
+                {/* EYES */}
+                <div 
+                  className="flex gap-6 transition-transform duration-200"
+                  style={{ transform: `translate(${eyePos.x}px, ${eyePos.y}px)` }}
+                >
+                  <div className={`w-4 h-6 rounded-lg transition-all duration-300 ${mood === 'happy' || mood === 'success' ? 'h-3 bg-emerald-400 rounded-t-full border-2 border-emerald-400' : mood === 'pressed' ? 'h-3 bg-[#ff3333] rounded-b-full' : 'bg-[#ff3333] shadow-[0_0_10px_#ff3333]'}`} />
+                  <div className={`w-4 h-6 rounded-lg transition-all duration-300 ${mood === 'happy' || mood === 'success' ? 'h-3 bg-emerald-400 rounded-t-full border-2 border-emerald-400' : mood === 'pressed' ? 'h-3 bg-[#ff3333] rounded-b-full' : 'bg-[#ff3333] shadow-[0_0_10px_#ff3333]'}`} />
+                </div>
+
+                {/* CHEEKS */}
+                <div className={`flex justify-between w-full px-4 absolute bottom-5 transition-opacity duration-300 ${mood === 'happy' || mood === 'success' ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="w-3 h-1.5 rounded-full bg-emerald-500/80" />
+                  <div className="w-3 h-1.5 rounded-full bg-emerald-500/80" />
+                </div>
+
+                {/* MOUTH */}
+                <div className={`transition-all duration-300 ${mood === 'watching' ? 'w-2 h-2 rounded-full bg-[#ff3333]' : mood === 'happy' || mood === 'success' ? 'w-6 h-2 bg-emerald-400 rounded-b-full' : 'w-4 h-1 bg-[#ff3333] rounded-full'}`} />
+              </div>
+            </div>
+
+            {/* BACK FACE (PASSWORD SECURITY PANEL) */}
+            <div className={`absolute inset-0 p-3 bg-black flex flex-col items-center justify-center gap-2 text-center ${isTurned ? 'block [transform:rotateY(180deg)]' : 'hidden'}`}>
+              <div className="flex gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7a0000] animate-ping" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              </div>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map((lvl) => (
+                  <div key={lvl} className={`w-3.5 h-4 rounded-sm transition-colors duration-200 ${passScore >= lvl ? (passScore === 4 ? 'bg-emerald-500' : passScore >= 2 ? 'bg-amber-400' : 'bg-rose-600') : 'bg-[#2b0808]'}`} />
+                ))}
+              </div>
+              <p className="text-[9px] font-mono font-black text-slate-300 uppercase tracking-widest">{passLabels[passScore]}</p>
+            </div>
+
+          </div>
+        </div>
       </div>
 
-      {!isLogin && (
-        <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
-          {['personal', 'student', 'teacher'].map((type) => (
-            <button
-              key={type} type="button" onClick={() => setAccountType(type)}
-              className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${accountType === type ? 'bg-white text-[#4F8EF7] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* CARD FORM WRAPPER */}
+      <div className="w-full max-w-md bg-[#0f0505] border-2 border-[#2b0808] rounded-3xl p-8 shadow-2xl space-y-6 relative z-20">
+        
+        {/* ROBOT HANDS */}
+        <div className="absolute -top-4 left-10 w-10 h-6 bg-[#1a0808] border-2 border-[#7a0000] rounded-xl z-30" />
+        <div className="absolute -top-4 right-10 w-10 h-6 bg-[#1a0808] border-2 border-[#7a0000] rounded-xl z-30" />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {!isLogin && (
-          <div>
-            <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Full Name</label>
-            <input type="text" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Alex Mercer" onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+        {isLogin && isForgotMode ? (
+          /* FORGOT PASSWORD SUB-FLOW */
+          <div className="space-y-6 animate-fadeInFast">
+            <div className="text-center space-y-1">
+              <h1 className="font-black text-2xl text-white">Security Reset Matrix</h1>
+              <p className="text-xs text-slate-400">Confirm identity for target payload: <span className="text-[#ff3333] font-mono font-bold">{maskedEmail}</span></p>
+            </div>
+
+            <form onSubmit={handlePasswordResetRequest} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Verify Full Email Handle</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={confirmEmailInput}
+                  className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm font-medium focus:outline-none focus:border-[#7a0000]" 
+                  placeholder="Type your email exactly to unlock" 
+                  onChange={(e) => setConfirmEmailInput(e.target.value)} 
+                  onFocus={() => { setIsTurned(false); setMood('watching'); say("Verification input detected. Be precise."); }}
+                />
+              </div>
+
+              {status.message && (
+                <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-950/40 border-emerald-900/40 text-emerald-400' : 'bg-rose-950/40 border-rose-900/40 text-rose-400'}`}>
+                  {status.message}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => { setIsForgotMode(false); setStatus({ message: '', success: false, loading: false }); say("Returned to main terminal login."); }}
+                  className="w-1/3 py-3 bg-[#1a0808] border border-[#2b0808] hover:bg-[#2b0808] text-slate-300 font-bold rounded-xl text-xs transition-all"
+                >
+                  Back
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={status.loading || !confirmEmailInput} 
+                  className="w-2/3 py-3 bg-[#7a0000] hover:bg-[#a30000] text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-md"
+                >
+                  {status.loading ? 'Dispatching...' : 'Dispatch Token Link'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-
-        <div>
-          <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Email Address</label>
-          <input type="email" required value={formData.email} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="alex@campus.edu" onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-        </div>
-
-        {!isLogin && (accountType === 'student' || accountType === 'teacher') && (
-          <div className="animate-fadeInFast">
-            <label className="block text-[11px] font-black uppercase text-[#4F8EF7] tracking-wider mb-1">Master School Hub Code</label>
-            <input type="text" required className="w-full px-4 py-3 bg-blue-50/30 border border-blue-100 rounded-xl text-sm font-mono uppercase" placeholder="E.G. DPS-MUMBAI" 
-              onChange={(e) => setFormData({ ...formData, schoolCode: e.target.value })}
-              onBlur={(e) => handleSchoolCodeBlur(e.target.value)} 
-            />
-          </div>
-        )}
-
-        {!isLogin && accountType === 'student' && availableClasses.length > 0 && (
-          <div className="animate-fadeInFast">
-            <label className="block text-[11px] font-black uppercase text-emerald-500 tracking-wider mb-1">Select Your Classroom</label>
-            <select required className="w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-sm font-medium text-slate-700 focus:outline-none" onChange={(e) => setFormData({ ...formData, specificClassId: e.target.value })}>
-              <option value="">-- Choose Class --</option>
-              {availableClasses.map((c) => (
-                <option key={c.id} value={c.id}>{c.class_name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {!isLogin && accountType === 'teacher' && (
-          <div className="animate-fadeInFast">
-            <label className="block text-[11px] font-black uppercase text-amber-500 tracking-wider mb-1">Upload Appointment Letter Proof (PDF/Image)</label>
-            <input type="file" required accept="image/*,application/pdf" className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-700" onChange={(e) => setDocumentFile(e.target.files[0])} />
-          </div>
-        )}
-
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider">Security Password</label>
-            {isLogin && (
-              <button 
-                type="button" 
-                onClick={initForgotPasswordFlow}
-                className="text-[10px] font-bold text-blue-500 hover:underline focus:outline-none [-webkit-tap-highlight-color:transparent]"
-              >
-                Forgot Password?
-              </button>
-            )}
-          </div>
-          <input type="password" required={!isForgotMode} minLength={6} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="••••••••" onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-        </div>
-
-        {status.message && (
-          <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
-            {status.message}
-          </p>
-        )}
-
-        <button type="submit" disabled={status.loading} className="w-full py-4 bg-[#4F8EF7] text-white font-black rounded-xl text-sm transition-all disabled:opacity-50">
-          {status.loading ? 'Syncing Workspace...' : isLogin ? 'Sign In' : 'Register Account'}
-        </button>
-      </form>
-
-      <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-100">
-        {isLogin ? (
-          <>Don't have an account? <button onClick={() => window.history.replaceState(null, '', '/signup')} className="text-[#4F8EF7] font-bold hover:underline">Register here</button></>
         ) : (
-          <>Already have an account? <button onClick={() => window.history.replaceState(null, '', '/signup?mode=login')} className="text-[#4F8EF7] font-bold hover:underline">Login here</button></>
+          /* STANDARD SIGNUP / LOGIN FORM */
+          <>
+            <div className="text-center space-y-1">
+              <h1 className="font-black text-2xl text-white">{isLogin ? 'Welcome Back' : 'Create Your Wallet'}</h1>
+              <p className="text-xs text-slate-400">{isLogin ? 'Access your trading workspace.' : 'Initialize your ₹50,000 sandbox portfolio.'}</p>
+            </div>
+
+            {!isLogin && (
+              <div className="grid grid-cols-3 gap-1 bg-[#1a0808] p-1 border border-[#2b0808] rounded-xl">
+                {['personal', 'student', 'teacher'].map((type) => (
+                  <button
+                    key={type} type="button" onClick={() => { setAccountType(type); say(`Switched to ${type} track initialization.`); }}
+                    className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${accountType === type ? 'bg-[#7a0000] text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Full Name</label>
+                  <input 
+                    type="text" 
+                    required 
+                    className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm focus:outline-none focus:border-[#7a0000]" 
+                    placeholder="Alex Mercer" 
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      followInputLength(e.target.value.length);
+                    }} 
+                    onFocus={() => { setIsTurned(false); setMood('watching'); say("A visitor! State your official trader name."); }}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={formData.email} 
+                  className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm focus:outline-none focus:border-[#7a0000]" 
+                  placeholder="alex@campus.edu" 
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    followInputLength(e.target.value.length);
+                  }} 
+                  onFocus={() => { setIsTurned(false); setMood('watching'); say("Type your email address. I don't send spam!"); }}
+                />
+              </div>
+
+              {!isLogin && (accountType === 'student' || accountType === 'teacher') && (
+                <div className="animate-fadeInFast">
+                  <label className="block text-[11px] font-black uppercase text-[#ff3333] tracking-wider mb-1">Master School Hub Code</label>
+                  <input type="text" required className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#7a0000]" placeholder="E.G. DPS-MUMBAI" 
+                    onChange={(e) => setFormData({ ...formData, schoolCode: e.target.value })}
+                    onBlur={(e) => handleSchoolCodeBlur(e.target.value)} 
+                    onFocus={() => { setIsTurned(false); setMood('watching'); say("Enter your institutional school code."); }}
+                  />
+                </div>
+              )}
+
+              {!isLogin && accountType === 'student' && availableClasses.length > 0 && (
+                <div className="animate-fadeInFast">
+                  <label className="block text-[11px] font-black uppercase text-emerald-400 tracking-wider mb-1">Select Your Classroom</label>
+                  <select required className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm font-medium focus:outline-none focus:border-[#7a0000]" onChange={(e) => setFormData({ ...formData, specificClassId: e.target.value })}>
+                    <option value="">-- Choose Class --</option>
+                    {availableClasses.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-[#0f0505] text-white">{c.class_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {!isLogin && accountType === 'teacher' && (
+                <div className="animate-fadeInFast">
+                  <label className="block text-[11px] font-black uppercase text-amber-400 tracking-wider mb-1">Upload Appointment Letter Proof (PDF/Image)</label>
+                  <input type="file" required accept="image/*,application/pdf" className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#1a0808] file:text-amber-400" onChange={(e) => setDocumentFile(e.target.files[0])} />
+                </div>
+              )}
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider">Security Password</label>
+                  {isLogin && (
+                    <button 
+                      type="button" 
+                      onClick={initForgotPasswordFlow}
+                      className="text-[10px] font-bold text-[#ff3333] hover:underline focus:outline-none"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
+                <input 
+                  type="password" 
+                  required={!isForgotMode} 
+                  minLength={6} 
+                  className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm focus:outline-none focus:border-[#7a0000]" 
+                  placeholder="••••••••" 
+                  onChange={(e) => handlePasswordInput(e.target.value)} 
+                  onFocus={() => { setIsTurned(true); setMood('watching'); say("A secret key? Turning around so I don't peek!"); }}
+                  onBlur={() => setIsTurned(false)}
+                />
+              </div>
+
+              {status.message && (
+                <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-950/40 border-emerald-900/40 text-emerald-400' : 'bg-rose-950/40 border-rose-900/40 text-rose-400'}`}>
+                  {status.message}
+                </p>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={status.loading} 
+                onMouseEnter={() => { setMood('excited'); say("Ready to initialize execution?"); }}
+                onMouseLeave={() => setMood('idle')}
+                className="w-full py-4 bg-[#7a0000] hover:bg-[#a30000] text-white font-black rounded-xl text-sm transition-all disabled:opacity-50 shadow-md uppercase tracking-wider"
+              >
+                {status.loading ? 'Syncing Workspace...' : isLogin ? 'Sign In' : 'Register Account'}
+              </button>
+            </form>
+
+            <div className="text-center text-xs text-slate-400 pt-2 border-t border-[#2b0808]">
+              {isLogin ? (
+                <>Don't have an account? <button onClick={() => { window.history.replaceState(null, '', '/signup'); setIsLogin(false); say("Switched to signup mode."); }} className="text-[#ff3333] font-bold hover:underline">Register here</button></>
+              ) : (
+                <>Already have an account? <button onClick={() => { window.history.replaceState(null, '', '/signup?mode=login'); setIsLogin(true); say("Switched to login terminal."); }} className="text-[#ff3333] font-bold hover:underline">Login here</button></>
+              )}
+            </div>
+          </>
         )}
+
       </div>
     </div>
   );
@@ -313,10 +480,10 @@ function SignupForm() {
 
 export default function Signup() {
   return (
-    <main className="min-h-screen bg-[#f5f7ff] antialiased">
+    <main className="min-h-screen bg-black text-slate-100 antialiased pt-28 pb-12">
       <Navbar />
-      <section className="max-w-md mx-auto px-6 pt-16 pb-12">
-        <Suspense fallback={<div className="w-full text-center py-12 text-xs font-bold text-slate-400">Loading Configuration...</div>}>
+      <section className="max-w-md mx-auto px-6">
+        <Suspense fallback={<div className="w-full text-center py-12 text-xs font-bold text-slate-500">Loading Terminal...</div>}>
           <SignupForm />
         </Suspense>
       </section>
