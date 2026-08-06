@@ -3,18 +3,37 @@
 :root {
   --font-poppins: 'Poppins', sans-serif;
   --font-inter: 'Inter', sans-serif;
+
+  /* Bull Run Crimson & Black Color Variables */
+  --bg-main: #000000;
+  --bg-surface: #0f0505;
+  --bg-surface-elevated: #1a0808;
+
+  --color-red-dark: #4a0000;
+  --color-red-primary: #7a0000;
+  --color-red-hover: #a30000;
+  --color-red-bright: #dc2626;
+  --color-red-glow: #ff3333;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --border-color: #2b0808;
+  --border-color-active: #7a0000;
 }
 
 body {
   font-family: var(--font-inter);
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-poppins);
+  color: #ffffff;
 }
 
 @keyframes rainDown {
@@ -109,8 +128,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .animate-gradientFlow {
+  background: linear-gradient(-45deg, #000000, #2b0000, #7a0000, #a30000, #000000);
   background-size: 200% 200%;
-  animation: gradientFlow 4s ease infinite;
+  animation: gradientFlow 6s ease infinite;
 }
 
 .duration-4000 {
