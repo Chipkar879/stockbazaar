@@ -62,75 +62,78 @@ export default function Navbar() {
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   return (
-    <header className="w-full bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-4">
+    <header className="w-full bg-[#0f0505] border-b border-[#2b0808] sticky top-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Left Side: Brand Logo */}
-        <Link href="/" className="flex items-center gap-1 group select-none" onClick={closeMenu}>
-          <span className="text-xl font-black tracking-tight text-blue-500">Stock</span>
-          <span className="text-xl font-black tracking-tight text-emerald-400">bazaar</span>
+        <Link href="/" className="flex items-center gap-1.5 group select-none outline-none" onClick={closeMenu}>
+          <span className="text-xl font-black tracking-tight text-white group-hover:text-slate-200 transition-colors">Bull</span>
+          <span className="text-xl font-black tracking-tight text-[#ff3333] group-hover:text-[#dc2626] transition-colors">Run</span>
         </Link>
 
         {/* Center: DYNAMIC NAVIGATION ITEMS */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-500">
-          <Link href="/" className={`pb-0.5 transition-all ${pathname === '/' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Home</Link>
-          <Link href="/simulator" className={`pb-0.5 transition-all ${pathname === '/simulator' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Simulator</Link>
-          <Link href="/courses" className={`pb-0.5 transition-all ${pathname === '/courses' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Modules</Link>
-          <Link href="/quiz" className={`pb-0.5 transition-all ${pathname === '/quiz' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Daily Quiz</Link>
-          <Link href="/leaderboard" className={`pb-0.5 transition-all ${pathname === '/leaderboard' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Leaderboard</Link>
-          <Link href="/pricing" className={`pb-0.5 transition-all ${pathname === '/pricing' ? 'text-blue-500 border-b-2 border-blue-500' : 'hover:text-slate-900'}`}>Pricing</Link>
+        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-400">
+          <Link href="/" className={`pb-0.5 transition-all ${pathname === '/' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Home</Link>
+          <Link href="/simulator" className={`pb-0.5 transition-all ${pathname === '/simulator' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Simulator</Link>
+          <Link href="/courses" className={`pb-0.5 transition-all ${pathname === '/courses' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Modules</Link>
+          <Link href="/quiz" className={`pb-0.5 transition-all ${pathname === '/quiz' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Daily Quiz</Link>
+          <Link href="/leaderboard" className={`pb-0.5 transition-all ${pathname === '/leaderboard' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Leaderboard</Link>
+          <Link href="/pricing" className={`pb-0.5 transition-all ${pathname === '/pricing' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Pricing</Link>
         </nav>
 
         {/* Right Side: Contextual Auth / Hamburger Control Layout */}
         <div className="flex items-center gap-4">
           {loading ? (
-            <div className="h-9 w-9 bg-slate-100 rounded-xl animate-pulse border border-slate-200" />
+            <div className="h-9 w-9 bg-[#1a0808] border border-[#2b0808] rounded-xl animate-pulse" />
           ) : !user ? (
             <Link 
               href="/signup?mode=login" 
-              className="text-xs font-black text-blue-500 border border-blue-200 hover:bg-blue-50/50 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+              className="text-xs font-black text-[#ff3333] border border-[#7a0000]/50 hover:bg-[#7a0000]/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
               onClick={closeMenu}
             >
               Sign In
             </Link>
           ) : (
-            /* CLICKABLE INITIALS AVATAR BUTTON - REWRITTEN FOR STYLING FIXES */
+            /* CLICKABLE INITIALS AVATAR BUTTON - BRANDED FOR BULL RUN */
             <Link
               href="/profile"
-              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-500 to-emerald-400 p-[2px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none outline-none focus:outline-none focus:ring-0 [-webkit-tap-highlight-color:transparent] animate-fadeIn"
+              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#7a0000] to-black p-[1px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none outline-none focus:outline-none focus:ring-0 [-webkit-tap-highlight-color:transparent] animate-fadeIn"
               onClick={closeMenu}
             >
-              <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center hover:bg-slate-50/80 transition-colors outline-none focus:outline-none">
-                <span className="text-[11px] font-black tracking-wider text-slate-700 select-none">
+              <div className="h-full w-full bg-[#1a0808] border border-[#2b0808] rounded-[11px] flex items-center justify-center hover:bg-[#2b0808] transition-colors outline-none focus:outline-none">
+                <span className="text-[11px] font-black tracking-wider text-[#ff3333] select-none">
                   {initials}
                 </span>
               </div>
             </Link>
           )}
 
-          {/* Toggle Button */}
+          {/* Mobile Hamburger Toggle Button */}
           <button 
-            className="flex flex-col gap-1.5 md:hidden p-2 text-slate-600 focus:outline-none z-50"
+            className="flex flex-col gap-1.5 md:hidden p-2 text-slate-300 focus:outline-none z-50"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Navigation"
           >
-            <span className={`h-0.5 w-6 bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-            <span className={`h-0.5 w-6 bg-slate-900 rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45' : ''}`}></span>
+            <span className={`h-0.5 w-6 bg-white rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2 bg-[#ff3333]' : ''}`}></span>
+            <span className={`h-0.5 w-6 bg-white rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`h-0.5 w-6 bg-white rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2 bg-[#ff3333]' : ''}`}></span>
           </button>
         </div>
       </div>
 
       {/* DYNAMIC MOBILE DRAWER MENU OVERLAY */}
-      <div className={`absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-md p-6 flex flex-col gap-4 text-sm font-bold text-slate-600 md:hidden transition-all duration-300 origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
-        <Link href="/" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Home</Link>
-        <Link href="/simulator" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/simulator' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Simulator</Link>
-        <Link href="/courses" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/courses' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Modules</Link>
-        <Link href="/quiz" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/quiz' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Daily Quiz</Link>
-        <Link href="/leaderboard" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/leaderboard' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Leaderboard</Link>
-        <Link href="/pricing" onClick={closeMenu} className={`p-2 rounded-xl ${pathname === '/pricing' ? 'bg-blue-50 text-blue-500' : 'hover:bg-slate-50'}`}>Pricing</Link>
+      <div className={`absolute top-full left-0 w-full bg-[#0f0505] border-b border-[#2b0808] shadow-2xl p-6 flex flex-col gap-3 text-sm font-bold text-slate-300 md:hidden transition-all duration-300 origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
+        <Link href="/" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Home</Link>
+        <Link href="/simulator" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/simulator' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Simulator</Link>
+        <Link href="/courses" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/courses' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Modules</Link>
+        <Link href="/quiz" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/quiz' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Daily Quiz</Link>
+        <Link href="/leaderboard" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/leaderboard' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Leaderboard</Link>
+        <Link href="/pricing" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/pricing' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Pricing</Link>
         
         {user && (
-          <Link href="/profile" onClick={closeMenu} className={`p-2 rounded-xl border-t border-slate-100 mt-2 text-blue-500 ${pathname === '/profile' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-            My Profile ({initials})
+          <Link href="/profile" onClick={closeMenu} className={`p-2.5 rounded-xl border-t border-[#2b0808] mt-2 text-[#ff3333] flex items-center justify-between ${pathname === '/profile' ? 'bg-[#1a0808]' : 'hover:bg-[#1a0808]'}`}>
+            <span>My Profile</span>
+            <span className="px-2 py-0.5 bg-[#7a0000] text-white rounded-md text-xs font-black">{initials}</span>
           </Link>
         )}
       </div>
