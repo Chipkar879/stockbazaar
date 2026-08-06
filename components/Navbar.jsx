@@ -9,8 +9,6 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [initials, setInitials] = useState('');
   const [loading, setLoading] = useState(true);
-  
-  // State to track if the mobile menu layout is open or closed
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -58,20 +56,19 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close mobile menu automatically when a link is clicked
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   return (
-    <header className="w-full bg-[#0f0505]/95 backdrop-blur-md border-b border-[#2b0808] fixed top-0 left-0 right-0 z-50 px-6 py-4">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0f0505] border-b border-[#3d0d0d] shadow-xl shadow-black/80 px-6 py-3.5">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
-        {/* Left Side: Brand Logo */}
+        {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-1.5 group select-none outline-none" onClick={closeMenu}>
           <span className="text-xl font-black tracking-tight text-white group-hover:text-slate-200 transition-colors">Bull</span>
           <span className="text-xl font-black tracking-tight text-[#ff3333] group-hover:text-[#dc2626] transition-colors">Run</span>
         </Link>
 
-        {/* Center: DYNAMIC NAVIGATION ITEMS */}
+        {/* Navigation Items */}
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-400">
           <Link href="/" className={`pb-0.5 transition-all ${pathname === '/' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Home</Link>
           <Link href="/simulator" className={`pb-0.5 transition-all ${pathname === '/simulator' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Simulator</Link>
@@ -81,14 +78,14 @@ export default function Navbar() {
           <Link href="/pricing" className={`pb-0.5 transition-all ${pathname === '/pricing' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Pricing</Link>
         </nav>
 
-        {/* Right Side: Contextual Auth / Hamburger Control Layout */}
+        {/* Right Side Actions */}
         <div className="flex items-center gap-4">
           {loading ? (
             <div className="h-9 w-9 bg-[#1a0808] border border-[#2b0808] rounded-xl animate-pulse" />
           ) : !user ? (
             <Link 
               href="/signup?mode=login" 
-              className="text-xs font-black text-[#ff3333] border border-[#7a0000]/50 hover:bg-[#7a0000]/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+              className="text-xs font-black text-[#ff3333] border border-[#7a0000]/50 hover:bg-[#7a0000]/20 px-4 py-2 rounded-xl transition-all shadow-sm"
               onClick={closeMenu}
             >
               Sign In
@@ -96,10 +93,10 @@ export default function Navbar() {
           ) : (
             <Link
               href="/profile"
-              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#7a0000] to-black p-[1px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none outline-none focus:outline-none focus:ring-0 [-webkit-tap-highlight-color:transparent] animate-fadeIn"
+              className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#7a0000] to-black p-[1px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none outline-none focus:outline-none"
               onClick={closeMenu}
             >
-              <div className="h-full w-full bg-[#1a0808] border border-[#2b0808] rounded-[11px] flex items-center justify-center hover:bg-[#2b0808] transition-colors outline-none focus:outline-none">
+              <div className="h-full w-full bg-[#1a0808] border border-[#2b0808] rounded-[11px] flex items-center justify-center hover:bg-[#2b0808] transition-colors">
                 <span className="text-[11px] font-black tracking-wider text-[#ff3333] select-none">
                   {initials}
                 </span>
@@ -107,7 +104,7 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Mobile Hamburger Toggle Button */}
+          {/* Mobile Hamburger Toggle */}
           <button 
             className="flex flex-col gap-1.5 md:hidden p-2 text-slate-300 focus:outline-none z-50"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -120,8 +117,8 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* DYNAMIC MOBILE DRAWER MENU OVERLAY */}
-      <div className={`absolute top-full left-0 w-full bg-[#0f0505] border-b border-[#2b0808] shadow-2xl p-6 flex flex-col gap-3 text-sm font-bold text-slate-300 md:hidden transition-all duration-300 origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
+      {/* Mobile Drawer */}
+      <div className={`absolute top-full left-0 w-full bg-[#0f0505] border-b border-[#3d0d0d] shadow-2xl p-6 flex flex-col gap-3 text-sm font-bold text-slate-300 md:hidden transition-all duration-300 origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
         <Link href="/" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Home</Link>
         <Link href="/simulator" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/simulator' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Simulator</Link>
         <Link href="/courses" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/courses' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Modules</Link>

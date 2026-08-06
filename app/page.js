@@ -164,7 +164,7 @@ export default function Home() {
   const ASSET_TYPES = ['\u20B9', '$', '\uD83D\uDE80', '\uD83D\uDCC8', '\uD83D\uDCC9', '\u20BF', '\uD83D\uDCCA', '\uD83D\uDCBC', '\uD83D\uDCB3', '\uD83D\uDC8E'];
 
   return (
-    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans pt-20 pb-20 overflow-x-hidden relative">
+    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans pt-24 pb-20 relative">
       <Navbar />
 
       {/* BACKGROUND FLOATING RAIN LAYER */}
