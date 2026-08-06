@@ -62,7 +62,7 @@ export default function Navbar() {
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   return (
-    <header className="w-full bg-[#0f0505] border-b border-[#2b0808] sticky top-0 z-50 px-6 py-4">
+    <header className="w-full bg-[#0f0505]/95 backdrop-blur-md border-b border-[#2b0808] fixed top-0 left-0 right-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Left Side: Brand Logo */}
@@ -94,7 +94,6 @@ export default function Navbar() {
               Sign In
             </Link>
           ) : (
-            /* CLICKABLE INITIALS AVATAR BUTTON - BRANDED FOR BULL RUN */
             <Link
               href="/profile"
               className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#7a0000] to-black p-[1px] shadow-sm transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center select-none outline-none focus:outline-none focus:ring-0 [-webkit-tap-highlight-color:transparent] animate-fadeIn"
