@@ -164,11 +164,11 @@ export default function Home() {
   const ASSET_TYPES = ['\u20B9', '$', '\uD83D\uDE80', '\uD83D\uDCC8', '\uD83D\uDCC9', '\u20BF', '\uD83D\uDCCA', '\uD83D\uDCBC', '\uD83D\uDCB3', '\uD83D\uDC8E'];
 
   return (
-    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans pt-24 pb-20 relative">
+    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pb-20">
       <Navbar />
 
-      {/* BACKGROUND FLOATING RAIN LAYER */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* BACKGROUND FLOATING RAIN LAYER (Strictly constrained for mobile screens) */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden max-w-full">
         {ASSET_TYPES.map((asset, typeIdx) => 
           [...Array(6)].map((_, itemIdx) => (
             <RainingAsset 
@@ -180,22 +180,24 @@ export default function Home() {
         )}
       </div>
 
-      {/* MAIN HERO LANDING BLOCK */}
-      <section className="max-w-7xl mx-auto px-6 pt-16 text-center space-y-8 relative z-10">
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#7a0000]/15 blur-[120px] rounded-full -z-10 animate-pulse duration-5000" />
+      {/* MAIN HERO LANDING BLOCK (Top padding pt-28 sm:pt-36 prevents overlapping with fixed navbar) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 sm:pt-36 text-center space-y-8 relative z-10">
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[300px] sm:w-[600px] h-[200px] sm:h-[300px] bg-[#7a0000]/15 blur-[120px] rounded-full -z-10 animate-pulse duration-5000" />
 
         <div className="space-y-4 max-w-3xl mx-auto select-none animate-fadeIn">
           <span className="inline-flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] text-[#ff3333] text-[11px] uppercase tracking-widest font-black px-4 py-1.5 rounded-full shadow-inner animate-bounce">
             🚀 The Ultimate Classroom Sandbox Arena
           </span>
+          
           <h1 className="text-4xl sm:text-7xl font-black tracking-tight leading-none text-white">
             Own the Market <br className="hidden sm:inline" />
             Before the{' '}
-            <span className="bg-gradient-to-r from-[#dc2626] via-[#ed9292] to-white bg-clip-text text-transparent drop-shadow-sm font-black">
+            <span className="bg-gradient-to-r from-[#7a0000] via-[#dc2626] to-white bg-clip-text text-transparent drop-shadow-sm font-black">
               Bell Rings
             </span>
           </h1>
-          <p className="text-slate-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed pt-3">
+
+          <p className="text-slate-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed pt-3 font-medium">
             Risk-free paper trading powered by high-frequency market simulations. Practice with live data feeds, candlestick tracking layers, and competitive campus leaderboards.
           </p>
         </div>
@@ -244,7 +246,7 @@ export default function Home() {
                   <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Active User</p>
                   <h3 className="text-base font-poppins font-black text-white">{profile?.name || 'Workspace Account'}</h3>
                 </div>
-                <span className="px-2.5 py-0.5 bg-[#1a0808] border border-[#2b0808] rounded-full text-[9px] font-black uppercase tracking-wider text-rose-400">
+                <span className="px-2.5 py-0.5 bg-[#1a0808] border border-[#2b0808] rounded-full text-[9px] font-black uppercase tracking-wider text-[#ff3333]">
                   {profile?.role} Track
                 </span>
               </div>
@@ -321,7 +323,7 @@ export default function Home() {
       </section>
 
       {profile?.role === 'teacher' && profile?.verification_status === 'approved' && pendingClassStudents.length > 0 && (
-        <section className="max-w-md mx-auto px-6 pt-4 relative z-20 animate-fadeInFast">
+        <section className="max-w-md mx-auto px-4 sm:px-6 pt-4 relative z-20 animate-fadeInFast">
           <div className="bg-[#0f0505] border border-[#2b0808] rounded-3xl p-5 shadow-xl space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">📋 Live Assigned Class Requests ({pendingClassStudents.length})</h4>
             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
@@ -340,10 +342,10 @@ export default function Home() {
       )}
 
       {/* LIVE MARKET SIMULATOR TERMINAL SECTION */}
-      <section id="simulator" className="max-w-7xl mx-auto px-6 pt-28 relative z-10 flex flex-col items-center justify-center animate-fadeIn scroll-mt-24">
+      <section id="simulator" className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 relative z-10 flex flex-col items-center justify-center animate-fadeIn scroll-mt-24">
         <div className="border-b border-[#2b0808] pb-6 mb-12 text-center max-w-xl w-full">
           <h2 className="text-2xl font-black text-white">Terminal Engine Simulator</h2>
-          <p className="text-xs text-slate-400 mt-1">Real-time exchange tracking interfaces driven by high-accuracy pipeline proxies.</p>
+          <p className="text-xs text-slate-400 mt-1 font-medium">Real-time exchange tracking interfaces driven by high-accuracy pipeline proxies.</p>
         </div>
 
         <div className="bg-[#0f0505] border border-[#2b0808] rounded-3xl shadow-2xl w-full max-w-4xl p-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -411,7 +413,7 @@ export default function Home() {
       </section>
 
       {/* CORE INTERACTIVE ANCHORS FOR INTEGRATED LEARNING ACADEMY */}
-      <section id="courses" className="max-w-6xl mx-auto px-6 pt-32 relative z-10 space-y-8 scroll-mt-24">
+      <section id="courses" className="max-w-6xl mx-auto px-4 sm:px-6 pt-32 relative z-10 space-y-8 scroll-mt-24">
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-black tracking-tight text-white">Integrated Trading Academy</h2>
           <p className="text-slate-400 text-xs max-w-md mx-auto font-medium">Master tactical market theories through dynamic self-paced sandbox training paths.</p>
@@ -442,14 +444,14 @@ export default function Home() {
       </section>
 
       {/* CAMPUS DEPLOYMENT METRICS BANNER */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 pt-32 relative z-10 scroll-mt-24">
+      <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 pt-32 relative z-10 scroll-mt-24">
         <div className="bg-gradient-to-br from-[#0f0505] to-[#1a0808] border border-[#2b0808] text-white rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group">
           <div className="space-y-3 max-w-xl text-center md:text-left z-10">
             <span className="bg-[#7a0000]/20 text-[#ff3333] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-[#7a0000]/40">
               Campus Classroom Access
             </span>
             <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight text-white">Launch Custom Classroom Tournaments</h2>
-            <p className="text-slate-400 text-xs leading-relaxed max-w-lg mx-auto md:mx-0">
+            <p className="text-slate-400 text-xs leading-relaxed max-w-lg mx-auto md:mx-0 font-medium">
               Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
             </p>
           </div>
