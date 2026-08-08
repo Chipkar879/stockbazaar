@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 
-// Static configurations placed outside the render tree to ensure zero reference leakage or state dependency loop cycles
+// Static configurations placed outside the render tree
 const STATIC_COMPANY_REGISTRY = [
   { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', yahoo: 'RELIANCE.NS', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
   { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', yahoo: 'TCS.NS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
@@ -19,18 +19,17 @@ const STATIC_COMPANY_REGISTRY = [
 const UNIFIED_SYMBOLS_QUERY = STATIC_COMPANY_REGISTRY.map(s => s.yahoo).join(',');
 
 const CHALLENGE_EVENTS_REGISTRY = [
-  { msg: 'Tech sector crash! TECH -20%', sym: 'TECH', pct: -0.20, col: 'text-red-500 bg-red-50 border-red-200' },
-  { msg: 'Green energy boom! GRN +25%', sym: 'GRN', pct: 0.25, col: 'text-emerald-500 bg-emerald-50 border-emerald-200' },
-  { msg: 'Moon mission funded! MOON +28%', sym: 'MOON', pct: 0.28, col: 'text-emerald-500 bg-emerald-50 border-emerald-200' },
-  { msg: 'Chip shortage! CHIP -15%', sym: 'CHIP', pct: -0.15, col: 'text-red-500 bg-red-50 border-red-200' }
+  { msg: 'Tech sector crash! TECH -20%', sym: 'TECH', pct: -0.20, col: 'text-rose-400 bg-rose-950/40 border-rose-900/60' },
+  { msg: 'Green energy boom! GRN +25%', sym: 'GRN', pct: 0.25, col: 'text-emerald-400 bg-emerald-950/40 border-emerald-900/60' },
+  { msg: 'Moon mission funded! MOON +28%', sym: 'MOON', pct: 0.28, col: 'text-emerald-400 bg-emerald-950/40 border-emerald-900/60' },
+  { msg: 'Chip shortage! CHIP -15%', sym: 'CHIP', pct: -0.15, col: 'text-rose-400 bg-rose-950/40 border-rose-900/60' }
 ];
 
 export default function CombinedSimulator() {
-  // Navigation State between Core Simulator Modules
   const [activeTab, setActiveTab] = useState('real'); 
 
   // =========================================================================
-  // ── 1. REAL PORTFOLIO SIMULATOR STATE & DATA (Yahoo Finance Live Proxy) ──
+  // ── 1. REAL PORTFOLIO SIMULATOR STATE ────────────────────────────────────
   // =========================================================================
   const START_REAL = 50000; 
   const [realBalance, setRealBalance] = useState(START_REAL);
@@ -40,7 +39,6 @@ export default function CombinedSimulator() {
   const [isChartSyncing, setIsChartSyncing] = useState(false);
   const [marketStatusMessage, setMarketStatusMessage] = useState('');
 
-  // CORRECTED STATE ARRAYS: Synchronized base prices directly matching live split metrics
   const [realStocks, setRealStocks] = useState([
     { sym: 'RELIANCE', price: 1309.35, changePct: '+0.15%' },
     { sym: 'TCS', price: 2199.00, changePct: '-0.32%' },
@@ -56,7 +54,6 @@ export default function CombinedSimulator() {
 
   const chartContainerRef = useRef(null);
 
-  // Parse structural detail references efficiently
   const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
   const activeStatePriceObj = realStocks.find(x => x.sym === selectedRealStock) || realStocks[0];
   
@@ -66,25 +63,23 @@ export default function CombinedSimulator() {
     changePct: activeStatePriceObj.changePct
   };
 
-  // 🏛️ REAL-TIME MARKET HOUR VALIDATION GATE (IST: Mon-Fri, 9:15 AM to 3:30 PM)
   const verifyMarketIsActive = () => {
     const indianTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
     const istDate = new Date(indianTimeStr);
     
-    const dayOfWeek = istDate.getDay(); // 0 = Sunday, 6 = Saturday
+    const dayOfWeek = istDate.getDay(); 
     const currentHour = istDate.getHours();
     const currentMinute = istDate.getMinutes();
     
     if (dayOfWeek === 0 || dayOfWeek === 6) return false;
     
     const absoluteMinutes = (currentHour * 60) + currentMinute;
-    const sessionOpenMinutes = (9 * 60) + 15;  // 09:15 AM IST
-    const sessionCloseMinutes = (15 * 60) + 30; // 03:30 PM IST
+    const sessionOpenMinutes = (9 * 60) + 15;  
+    const sessionCloseMinutes = (15 * 60) + 30; 
     
     return absoluteMinutes >= sessionOpenMinutes && absoluteMinutes <= sessionCloseMinutes;
   };
 
-  // Multi-Ticker Price Sync Hook matching real.txt proxy standard
   useEffect(() => {
     if (activeTab !== 'real') return;
 
@@ -111,7 +106,6 @@ export default function CombinedSimulator() {
           return st;
         }));
       } catch (err) {
-        // Safe continuous simulation loop drifting from the corrected baseline values if backend is initializing
         setRealStocks(prevStocks => prevStocks.map(st => {
           if (st.sym === selectedRealStock) {
             const drift = (Math.random() * 0.0012) - 0.0006;
@@ -132,7 +126,6 @@ export default function CombinedSimulator() {
     return () => clearInterval(syncToken);
   }, [activeTab, selectedRealStock]);
 
-  // OFFICIAL TRADINGVIEW CLIENT WIDGET ENGINE MOUNT
   useEffect(() => {
     if (activeTab !== 'real' || !chartContainerRef.current) return;
 
@@ -195,7 +188,6 @@ export default function CombinedSimulator() {
   };
 
   const handleRealTrade = (sym, type) => {
-    // Market session parameter constraint check
     if (!verifyMarketIsActive()) {
       setMarketStatusMessage("🚨 Order Rejected: Indian Stock Exchanges (NSE/BSE) are currently closed. Live trading is only permitted Monday to Friday, 9:15 AM – 3:30 PM IST.");
       setTimeout(() => setMarketStatusMessage(''), 8000);
@@ -245,7 +237,7 @@ export default function CombinedSimulator() {
   };
 
   // =========================================================================
-  // ── 2. GAMIFIED CHALLENGE ARENA STATE & DATA (From game.txt) ─────────────
+  // ── 2. GAMIFIED CHALLENGE ARENA STATE ────────────────────────────────────
   // =========================================================================
   const START_GAME = 10000; 
   const [gameBalance, setGameBalance] = useState(START_GAME);
@@ -396,66 +388,66 @@ export default function CombinedSimulator() {
     .sort((a, b) => b.score - a.score); 
 
   return (
-    <main className="min-h-screen bg-[#f5f7ff] text-[#1e1b4b] antialiased font-sans pb-12">
+    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-20 pb-16">
       <Navbar />
 
       {/* DYNAMIC TOP NAVIGATION SELECTOR TAB SYSTEM */}
-      <div className="bg-white border-b border-[#e0e5f2] sticky top-[65px] z-40 shadow-sm">
-        <div className="max-w-[1240px] mx-auto px-4 flex gap-4">
+      <div className="bg-[#0f0505] border-b border-[#2b0808] sticky top-[64px] z-40 shadow-xl backdrop-blur-md">
+        <div className="max-w-[1240px] mx-auto px-4 flex gap-6">
           <button 
             onClick={() => setActiveTab('real')}
-            className={`py-4 text-sm font-bold transition-all border-b-2 ${activeTab === 'real' ? 'border-[#0891b2] text-[#0891b2]' : 'border-transparent text-[#64748b] hover:text-[#1e1b4b]'}`}
+            className={`py-3.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'real' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
-            📈 Real Indian Portfolio Simulator
+            📈 Real Indian Equity Simulator
           </button>
           <button 
             onClick={() => setActiveTab('game')}
-            className={`py-4 text-sm font-bold transition-all border-b-2 ${activeTab === 'game' ? 'border-[#7c3aed] text-[#7c3aed]' : 'border-transparent text-[#64748b] hover:text-[#1e1b4b]'}`}
+            className={`py-3.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'game' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
-            🏆 30-Day Game Arena Challenge
+            🏆 30-Day Volatility Challenge
           </button>
         </div>
       </div>
 
-      <div className="max-w-[1240px] mx-auto px-4 mt-8 space-y-6">
+      <div className="max-w-[1240px] mx-auto px-4 mt-6 space-y-6">
 
         {/* ── INTERFACE PANEL A: REAL SIMULATOR MODE ── */}
         {activeTab === 'real' && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div className="space-y-6 animate-fadeInFast">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
               <div>
-                <h1 className="text-2xl font-black tracking-tight">Real Equity Portfolio Simulator</h1>
-                <p className="text-[#64748b] text-xs mt-1">Live streaming tickers via internal proxy networks (.NS indices) • Starting allocation: ₹50,000</p>
+                <h1 className="text-2xl font-black tracking-tight text-white">Real Equity Portfolio Simulator</h1>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Live streaming tickers via internal proxy networks (.NS indices) • Initial Capital: ₹50,000</p>
               </div>
-              <div className="flex items-center bg-white border border-[#e0e5f2] px-4 py-2 rounded-xl shadow-sm text-sm font-extrabold font-mono">
-                🇮🇳 Market Session Synchronized
+              <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-4 py-2 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> NSE / BSE Market Session Sync
               </div>
             </div>
 
             {/* MARKET REGULATION STATUS TOAST POPUP */}
             {marketStatusMessage && (
-              <div className="p-4 rounded-xl font-bold text-xs bg-rose-50 border border-rose-200 text-rose-700 animate-fadeIn shadow-sm">
+              <div className="p-4 rounded-xl font-bold text-xs bg-rose-950/40 border border-rose-900/60 text-rose-300 animate-fadeIn shadow-sm">
                 {marketStatusMessage}
               </div>
             )}
 
             {/* PORTFOLIO METRICS SHEET */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Available Cash</span>
-                <div className="text-lg font-black mt-1 font-mono">₹{Math.round(realBalance).toLocaleString('en-IN')}</div>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Available Cash</span>
+                <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(realBalance).toLocaleString('en-IN')}</div>
               </div>
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Securities Holdings Value</span>
-                <div className="text-lg font-black mt-1 font-mono">₹{Math.round(getRealHoldingsValue()).toLocaleString('en-IN')}</div>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Holdings Portfolio Value</span>
+                <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(getRealHoldingsValue()).toLocaleString('en-IN')}</div>
               </div>
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Total Account Value</span>
-                <div className="text-lg font-black mt-1 font-mono">₹{Math.round(realBalance + getRealHoldingsValue()).toLocaleString('en-IN')}</div>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Account Net Worth</span>
+                <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(realBalance + getRealHoldingsValue()).toLocaleString('en-IN')}</div>
               </div>
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Net Margin Return</span>
-                <div className={`text-lg font-black mt-1 font-mono ${(realBalance + getRealHoldingsValue() - START_REAL) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Net Margin Return</span>
+                <div className={`text-lg font-black mt-1 font-mono ${(realBalance + getRealHoldingsValue() - START_REAL) >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
                   ₹{Math.round(realBalance + getRealHoldingsValue() - START_REAL).toLocaleString('en-IN')}
                 </div>
               </div>
@@ -464,11 +456,11 @@ export default function CombinedSimulator() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* STOCKS MATRIX WATCHLIST */}
-              <div className="bg-white border border-[#e0e5f2] rounded-xl overflow-hidden shadow-sm h-fit">
-                <div className="p-4 bg-[#f8fafc] border-b border-[#e0e5f2] font-black text-xs uppercase tracking-wider text-[#1e1b4b]">
-                  NSE Stocks Watchlist Matrix
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl h-fit">
+                <div className="p-4 bg-[#1a0808] border-b border-[#2b0808] font-black text-xs uppercase tracking-wider text-slate-300">
+                  NSE Watchlist Matrix
                 </div>
-                <div className="divide-y divide-[#e0e5f2] max-h-[500px] overflow-y-auto">
+                <div className="divide-y divide-[#2b0808] max-h-[500px] overflow-y-auto">
                   {realStocks.map(st => {
                     const registryInfo = STATIC_COMPANY_REGISTRY.find(r => r.sym === st.sym) || {};
                     const hold = realHoldings[st.sym];
@@ -476,18 +468,18 @@ export default function CombinedSimulator() {
                       <button 
                         key={st.sym}
                         onClick={() => setSelectedRealStock(st.sym)}
-                        className={`w-full p-4 text-left flex justify-between items-center transition-colors hover:bg-slate-50 ${selectedRealStock === st.sym ? 'bg-cyan-50/40 border-l-4 border-l-[#0891b2]' : ''}`}
+                        className={`w-full p-3.5 text-left flex justify-between items-center transition-colors hover:bg-[#1a0808] ${selectedRealStock === st.sym ? 'bg-[#1a0808] border-l-4 border-l-[#ff3333]' : ''}`}
                       >
                         <div>
-                          <div className="font-black text-sm text-[#1e1b4b]">{st.sym}</div>
-                          <div className="text-[11px] text-[#64748b] font-medium max-w-[150px] truncate">{registryInfo.name || st.sym}</div>
+                          <div className="font-black text-sm text-white">{st.sym}</div>
+                          <div className="text-[11px] text-slate-400 font-medium max-w-[140px] truncate">{registryInfo.name || st.sym}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-mono font-bold text-xs">₹{st.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                          <div className={`text-[11px] font-bold ${st.changePct.startsWith('-') ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          <div className="font-mono font-bold text-xs text-white">₹{st.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                          <div className={`text-[11px] font-bold ${st.changePct.startsWith('-') ? 'text-rose-500' : 'text-emerald-400'}`}>
                             {st.changePct}
                           </div>
-                          {hold && <div className="text-[10px] text-[#0891b2] font-extrabold mt-0.5">{hold.shares} Shares</div>}
+                          {hold && <div className="text-[10px] text-[#ff3333] font-black mt-0.5">{hold.shares} Shares</div>}
                         </div>
                       </button>
                     );
@@ -497,72 +489,72 @@ export default function CombinedSimulator() {
 
               {/* LIVE ORDER WORK DESK */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white border border-[#e0e5f2] p-6 rounded-xl shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-[#0f0505] border border-[#2b0808] p-6 rounded-2xl shadow-xl grid grid-cols-1 md:grid-cols-2 gap-6">
                   
                   <div className="space-y-4">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#0891b2] tracking-wider bg-cyan-50 border border-cyan-100 px-2 py-0.5 rounded">
+                      <span className="text-[10px] uppercase font-black text-[#ff3333] bg-[#1a0808] border border-[#2b0808] px-2.5 py-1 rounded-md tracking-wider">
                         {mergedActiveRealStock.sector}
                       </span>
-                      <h2 className="text-xl font-black text-[#1e1b4b] mt-2">{mergedActiveRealStock.name}</h2>
-                      <div className="text-2xl font-black font-mono text-[#1e1b4b] mt-1">
+                      <h2 className="text-xl font-black text-white mt-2.5">{mergedActiveRealStock.name}</h2>
+                      <div className="text-2xl font-black font-mono text-white mt-1">
                         ₹{mergedActiveRealStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#64748b]">Order Quantity Size</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Order Quantity Size</label>
                       <input 
                         type="number"
                         min="1"
                         value={realQtyInput}
                         onChange={e => setRealQtyInput(e.target.value)}
-                        className="w-full border-2 border-[#e0e5f2] rounded-xl px-4 py-2.5 text-sm font-mono font-bold text-[#1e1b4b] focus:outline-none focus:border-[#0891b2] bg-[#f5f7ff]"
+                        className="w-full border border-[#2b0808] rounded-xl px-4 py-2.5 text-sm font-mono font-bold text-white focus:outline-none focus:border-[#7a0000] bg-[#1a0808]"
                       />
                     </div>
 
                     <div className="flex gap-3 pt-1">
                       <button 
                         onClick={() => handleRealTrade(selectedRealStock, 'BUY')}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs uppercase font-black tracking-wider py-3 rounded-xl shadow-sm transition-all"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs uppercase font-black tracking-wider py-3 rounded-xl shadow-md transition-all"
                       >
                         Buy Asset
                       </button>
                       <button 
                         onClick={() => handleRealTrade(selectedRealStock, 'SELL')}
-                        className="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs uppercase font-black tracking-wider py-3 rounded-xl shadow-sm transition-all"
+                        className="flex-1 bg-rose-700 hover:bg-rose-800 text-white text-xs uppercase font-black tracking-wider py-3 rounded-xl shadow-md transition-all"
                       >
                         Sell Asset
                       </button>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-2.5 text-xs">
-                    <h3 className="font-black uppercase text-[#64748b] tracking-wider text-[11px]">Asset Valuation Profile</h3>
-                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                      <span className="text-[#64748b]">Market Cap:</span>
-                      <span className="font-bold text-[#1e1b4b]">{mergedActiveRealStock.cap}</span>
+                  <div className="bg-[#1a0808] border border-[#2b0808] p-4 rounded-xl space-y-2.5 text-xs">
+                    <h3 className="font-black uppercase text-slate-400 tracking-wider text-[10px]">Asset Valuation Profile</h3>
+                    <div className="flex justify-between border-b border-[#2b0808] pb-2">
+                      <span className="text-slate-400">Market Cap:</span>
+                      <span className="font-bold text-white">{mergedActiveRealStock.cap}</span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                      <span className="text-[#64748b]">P/E Margin:</span>
-                      <span className="font-bold font-mono text-[#1e1b4b]">{mergedActiveRealStock.pe}</span>
+                    <div className="flex justify-between border-b border-[#2b0808] pb-2">
+                      <span className="text-slate-400">P/E Margin:</span>
+                      <span className="font-bold font-mono text-white">{mergedActiveRealStock.pe}</span>
                     </div>
-                    <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                      <span className="text-[#64748b]">EPS Yield:</span>
-                      <span className="font-bold font-mono text-[#1e1b4b]">₹{mergedActiveRealStock.eps}</span>
+                    <div className="flex justify-between border-b border-[#2b0808] pb-2">
+                      <span className="text-slate-400">EPS Yield:</span>
+                      <span className="font-bold font-mono text-white">₹{mergedActiveRealStock.eps}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#64748b]">Yield Div:</span>
-                      <span className="font-bold text-[#1e1b4b]">{mergedActiveRealStock.div}</span>
+                    <div className="flex justify-between pt-0.5">
+                      <span className="text-slate-400">Yield Div:</span>
+                      <span className="font-bold text-white">{mergedActiveRealStock.div}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* ADVANCED TRADINGVIEW CORE ENGINE PLATFORM CONTAINER */}
-                <div className="bg-[#131722] border border-[#e0e5f2] rounded-xl overflow-hidden shadow-md relative h-[420px] w-full">
+                <div className="bg-[#000000] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl relative h-[420px] w-full">
                   {isChartSyncing && (
-                    <div className="absolute inset-0 bg-[#131722]/80 z-20 flex items-center justify-center text-xs font-bold text-cyan-400 animate-pulse">
-                      ⚡ Syncing Exchange Data Arrays...
+                    <div className="absolute inset-0 bg-black/80 z-20 flex items-center justify-center text-xs font-bold text-[#ff3333] animate-pulse">
+                      ⚡ Syncing TradingView Data Feeds...
                     </div>
                   )}
                   <div ref={chartContainerRef} className="w-full h-full" />
@@ -575,52 +567,52 @@ export default function CombinedSimulator() {
 
         {/* ── INTERFACE PANEL B: GAMIFIED CHALLENGE ARENA ── */}
         {activeTab === 'game' && (
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div className="space-y-6 animate-fadeInFast">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 border-b border-[#2b0808] pb-4">
               <div>
-                <h1 className="text-2xl font-black tracking-tight">30-Day Volatility Challenge</h1>
-                <p className="text-[#64748b] text-xs mt-1">10 simulated high-beta assets • Automatic progress loop mechanics • Starting capital allocation: ₹10,000</p>
+                <h1 className="text-2xl font-black tracking-tight text-white">30-Day Volatility Challenge</h1>
+                <p className="text-slate-400 text-xs mt-1 font-medium">10 simulated high-beta assets • Dynamic event updates • Starting allocation: ₹10,000</p>
               </div>
-              <div className="flex items-center gap-4 bg-white border border-[#e0e5f2] px-4 py-2.5 rounded-xl shadow-sm text-xs font-bold">
-                <div className="flex items-center gap-1.5 text-emerald-600 font-extrabold">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Engine Live
+              <div className="flex items-center gap-4 bg-[#0f0505] border border-[#2b0808] px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm">
+                <div className="flex items-center gap-1.5 text-emerald-400 font-extrabold">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Engine Active
                 </div>
-                <div className="text-[#64748b]">Next Day Auto-Advance: <span className="font-mono font-black text-[#7c3aed]">{autoSecsLeft}s</span></div>
+                <div className="text-slate-400">Next Step: <span className="font-mono font-black text-[#ff3333]">{autoSecsLeft}s</span></div>
               </div>
             </div>
 
-            <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between shadow-sm">
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between shadow-xl">
               <div>
-                <div className="text-lg font-black text-[#7c3aed]">Challenge Timeline: Day {day} / 30</div>
-                <div className="text-xs text-[#64748b]">Prices update systematically every 5 seconds.</div>
+                <div className="text-base font-black text-white">Challenge Timeline: Day {day} / 30</div>
+                <div className="text-xs text-slate-400 font-medium">Market prices shift every 5 seconds.</div>
               </div>
-              <div className="w-full sm:max-w-xs h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                <div className="h-full bg-gradient-to-r from-[#7c3aed] to-[#0891b2] transition-all" style={{ width: `${(day / 30) * 100}%` }} />
+              <div className="w-full sm:max-w-xs h-3 bg-[#1a0808] rounded-full overflow-hidden border border-[#2b0808]">
+                <div className="h-full bg-gradient-to-r from-[#7a0000] to-[#ff3333] transition-all" style={{ width: `${(day / 30) * 100}%` }} />
               </div>
             </div>
 
             {activeEvent && (
-              <div className={`p-4 rounded-xl border text-sm font-bold ${activeEvent.col}`}>
+              <div className={`p-4 rounded-xl border text-xs font-black shadow-sm ${activeEvent.col}`}>
                 📢 Broadcast Alert: {activeEvent.msg}
               </div>
             )}
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Game Cash Balance</span>
-                <div className="text-lg font-black mt-1 font-mono">₹{gameBalance.toLocaleString('en-IN')}</div>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Game Cash Balance</span>
+                <div className="text-lg font-black mt-1 font-mono text-white">₹{gameBalance.toLocaleString('en-IN')}</div>
               </div>
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Asset Positions Net</span>
-                <div className="text-lg font-black mt-1 font-mono">₹{getGameHoldingsValue().toLocaleString('en-IN')}</div>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Positions Valuation</span>
+                <div className="text-lg font-black mt-1 font-mono text-white">₹{getGameHoldingsValue().toLocaleString('en-IN')}</div>
               </div>
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Total Worth</span>
-                <div className="text-lg font-black mt-1 font-mono text-[#7c3aed]">₹{currentTotalGameVal.toLocaleString('en-IN')}</div>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Worth</span>
+                <div className="text-lg font-black mt-1 font-mono text-[#ff3333]">₹{currentTotalGameVal.toLocaleString('en-IN')}</div>
               </div>
-              <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm">
-                <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">Total Arena Net P&L</span>
-                <div className={`text-lg font-black mt-1 font-mono ${(currentTotalGameVal - START_GAME) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Arena Net P&L</span>
+                <div className={`text-lg font-black mt-1 font-mono ${(currentTotalGameVal - START_GAME) >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
                   ₹{(currentTotalGameVal - START_GAME).toLocaleString('en-IN')}
                 </div>
               </div>
@@ -631,21 +623,21 @@ export default function CombinedSimulator() {
                 {gameStocks.map(st => {
                   const hold = gameHoldings[st.sym];
                   return (
-                    <div key={st.sym} className="bg-white border border-[#e0e5f2] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                    <div key={st.sym} className="bg-[#0f0505] border border-[#2b0808] p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                       <div>
-                        <div className="font-black text-[#1e1b4b] text-base">{st.sym}</div>
-                        <div className="text-xs text-[#64748b] font-medium">{st.name}</div>
+                        <div className="font-black text-white text-base">{st.sym}</div>
+                        <div className="text-xs text-slate-400 font-medium">{st.name}</div>
                       </div>
                       
                       <div className="flex gap-6 items-center">
                         <div>
-                          <div className="font-mono font-black text-sm">₹{st.price.toLocaleString('en-IN')}</div>
-                          <div className={`text-xs font-bold ${st.changePct.startsWith('-') ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          <div className="font-mono font-black text-sm text-white">₹{st.price.toLocaleString('en-IN')}</div>
+                          <div className={`text-xs font-bold ${st.changePct.startsWith('-') ? 'text-rose-500' : 'text-emerald-400'}`}>
                             {st.changePct}
                           </div>
                         </div>
-                        <div className="text-xs font-medium text-[#64748b] bg-slate-50 px-3 py-1.5 border border-slate-100 rounded-lg">
-                          Position: <span className="font-bold text-[#1e1b4b]">{hold ? hold.shares : 0} Sh</span>
+                        <div className="text-xs font-bold text-slate-400 bg-[#1a0808] px-3 py-1.5 border border-[#2b0808] rounded-xl">
+                          Position: <span className="font-black text-white">{hold ? hold.shares : 0} Sh</span>
                         </div>
                       </div>
 
@@ -655,7 +647,7 @@ export default function CombinedSimulator() {
                           type="number"
                           min="1"
                           defaultValue="1"
-                          className="w-14 border border-slate-200 bg-[#f5f7ff] rounded-lg p-2 font-mono font-bold text-center text-xs text-[#1e1b4b] focus:outline-none"
+                          className="w-14 border border-[#2b0808] bg-[#1a0808] rounded-xl p-2 font-mono font-bold text-center text-xs text-white focus:outline-none focus:border-[#7a0000]"
                         />
                         <button 
                           onClick={() => {
@@ -663,7 +655,7 @@ export default function CombinedSimulator() {
                             handleGameTrade(st.sym, 'BUY', inputVal);
                           }}
                           disabled={gameOver}
-                          className="bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 px-3 py-2 text-xs font-bold rounded-lg transition-all"
+                          className="bg-emerald-950/40 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-900/60 px-3.5 py-2 text-xs font-black rounded-xl transition-all"
                         >
                           Buy
                         </button>
@@ -673,7 +665,7 @@ export default function CombinedSimulator() {
                             handleGameTrade(st.sym, 'SELL', inputVal);
                           }}
                           disabled={gameOver || !hold}
-                          className="bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 px-3 py-2 text-xs font-bold rounded-lg transition-all disabled:opacity-40"
+                          className="bg-rose-950/40 hover:bg-rose-700 text-rose-400 hover:text-white border border-rose-900/60 px-3.5 py-2 text-xs font-black rounded-xl transition-all disabled:opacity-40"
                         >
                           Sell
                         </button>
@@ -685,16 +677,16 @@ export default function CombinedSimulator() {
 
               {/* ARENA RUNTIME SCORE BOARD STANDINGS */}
               <div className="space-y-4">
-                <div className="bg-white border border-[#e0e5f2] rounded-xl p-4 shadow-sm space-y-4">
-                  <h3 className="font-black text-sm uppercase tracking-wider text-[#64748b] border-b border-slate-100 pb-2">Arena Leaderboard</h3>
+                <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl space-y-4">
+                  <h3 className="font-black text-xs uppercase tracking-wider text-slate-400 border-b border-[#2b0808] pb-2">Arena Leaderboard</h3>
                   <div className="space-y-2">
                     {sortedLeaderboard.map((player, idx) => (
                       <div 
                         key={player.name}
-                        className={`flex justify-between items-center text-xs p-2.5 rounded-lg border ${player.name.includes('You') ? 'bg-purple-50 border-purple-200 font-extrabold text-[#7c3aed]' : 'border-transparent bg-slate-50'}`}
+                        className={`flex justify-between items-center text-xs p-2.5 rounded-xl border ${player.name.includes('You') ? 'bg-[#1a0808] border-[#7a0000] font-black text-[#ff3333]' : 'border-[#2b0808] bg-[#0f0505] text-slate-300'}`}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-slate-400">#{idx + 1}</span>
+                          <span className="font-mono font-black text-slate-500">#{idx + 1}</span>
                           <span>{player.name}</span>
                         </div>
                         <span className="font-mono font-bold">₹{Math.round(player.score).toLocaleString('en-IN')}</span>
@@ -704,25 +696,25 @@ export default function CombinedSimulator() {
 
                   <button 
                     onClick={resetChallengeArena}
-                    className="w-full text-center py-2.5 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 text-xs font-bold bg-[#f5f7ff] rounded-xl transition-all"
+                    className="w-full text-center py-2.5 border border-[#2b0808] hover:border-rose-900/60 text-slate-400 hover:text-rose-400 text-xs font-bold bg-[#1a0808] rounded-xl transition-all"
                   >
                     Reset Challenge Session
                   </button>
                 </div>
 
                 {gameOver && (
-                  <div className="bg-gradient-to-br from-[#7c3aed] to-[#4f46e5] text-white p-6 rounded-xl shadow-lg space-y-4 transform transition-all duration-300">
+                  <div className="bg-gradient-to-br from-[#7a0000] to-black border border-[#a30000] text-white p-6 rounded-2xl shadow-2xl space-y-4 animate-scaleUp">
                     <div className="text-4xl text-center">🏁</div>
-                    <div className="text-center">
+                    <div className="text-center space-y-1">
                       <h2 className="font-black text-lg">Challenge Concluded!</h2>
-                      <p className="text-purple-100 text-xs mt-1">Your trading strategies captured a total balance standing metric valuation of:</p>
+                      <p className="text-rose-200/80 text-xs">Your portfolio generated a final standing valuation of:</p>
                     </div>
-                    <div className="text-2xl font-black font-mono text-center bg-white/10 p-3 rounded-lg border border-white/10">
+                    <div className="text-2xl font-black font-mono text-center bg-black/40 p-3 rounded-xl border border-white/10">
                       ₹{Math.round(currentTotalGameVal).toLocaleString('en-IN')}
                     </div>
                     <button 
                       onClick={resetChallengeArena}
-                      className="w-full py-3 bg-white text-[#7c3aed] font-black uppercase text-xs tracking-wider rounded-xl hover:bg-purple-50 shadow-md transition-all"
+                      className="w-full py-3 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-xs tracking-wider rounded-xl shadow-lg transition-all"
                     >
                       Initialize New Arena Setup
                     </button>
