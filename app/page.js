@@ -192,7 +192,7 @@ export default function Home() {
           <h1 className="text-4xl sm:text-7xl font-black tracking-tight leading-none text-white">
             Own the Market <br className="hidden sm:inline" />
             Before the{' '}
-            <span className="bg-gradient-to-r from-[#7a0000] via-[#dc2626] to-white bg-clip-text text-transparent drop-shadow-sm font-black">
+            <span className="bg-gradient-to-r from-[#dc2626] via-[#eed3d3] to-white bg-clip-text text-transparent drop-shadow-sm font-black">
               Bell Rings
             </span>
           </h1>
