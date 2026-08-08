@@ -388,38 +388,38 @@ export default function CombinedSimulator() {
     .sort((a, b) => b.score - a.score); 
 
   return (
-    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-20 pb-16">
+    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-16 pb-16">
       <Navbar />
 
-      {/* DYNAMIC TOP NAVIGATION SELECTOR TAB SYSTEM */}
-      <div className="bg-[#0f0505] border-b border-[#2b0808] sticky top-[64px] z-40 shadow-xl backdrop-blur-md">
+      {/* STICKY SELECTOR TAB BAR (Aligned cleanly beneath fixed header) */}
+      <div className="bg-[#0f0505] border-b border-[#2b0808] sticky top-[60px] z-40 shadow-xl backdrop-blur-md">
         <div className="max-w-[1240px] mx-auto px-4 flex gap-6">
           <button 
             onClick={() => setActiveTab('real')}
-            className={`py-3.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'real' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
+            className={`py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'real' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
             📈 Real Indian Equity Simulator
           </button>
           <button 
             onClick={() => setActiveTab('game')}
-            className={`py-3.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'game' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
+            className={`py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'game' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
             🏆 30-Day Volatility Challenge
           </button>
         </div>
       </div>
 
-      <div className="max-w-[1240px] mx-auto px-4 mt-6 space-y-6">
+      <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
 
         {/* ── INTERFACE PANEL A: REAL SIMULATOR MODE ── */}
         {activeTab === 'real' && (
           <div className="space-y-6 animate-fadeInFast">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-white">Real Equity Portfolio Simulator</h1>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">Real Equity Portfolio Simulator</h1>
                 <p className="text-slate-400 text-xs mt-1 font-medium">Live streaming tickers via internal proxy networks (.NS indices) • Initial Capital: ₹50,000</p>
               </div>
-              <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-4 py-2 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm">
+              <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm w-fit">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> NSE / BSE Market Session Sync
               </div>
             </div>
@@ -570,10 +570,10 @@ export default function CombinedSimulator() {
           <div className="space-y-6 animate-fadeInFast">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 border-b border-[#2b0808] pb-4">
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-white">30-Day Volatility Challenge</h1>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">30-Day Volatility Challenge</h1>
                 <p className="text-slate-400 text-xs mt-1 font-medium">10 simulated high-beta assets • Dynamic event updates • Starting allocation: ₹10,000</p>
               </div>
-              <div className="flex items-center gap-4 bg-[#0f0505] border border-[#2b0808] px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm">
+              <div className="flex items-center gap-4 bg-[#0f0505] border border-[#2b0808] px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm w-fit">
                 <div className="flex items-center gap-1.5 text-emerald-400 font-extrabold">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Engine Active
                 </div>
