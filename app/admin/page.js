@@ -7,20 +7,28 @@ import { supabase } from '@/lib/supabase';
 // ⚠️ SUPER ADMIN IMMUNITY EMAIL
 const SUPER_ADMIN_EMAIL = 'verymystery18@gmail.com';
 
-// Helper to check if trial is expired (7 days = 604800000 ms)
+// Helper to calculate 7-day trial and lock status dynamically
 const calculateTrialStatus = (profile) => {
-  if (profile.email === SUPER_ADMIN_EMAIL) return { isFrozen: false, daysLeft: 999, reason: 'Super Admin Immune' };
-  if (profile.is_premium) return { isFrozen: false, daysLeft: 999, reason: 'Premium Active' };
+  if (profile.email === SUPER_ADMIN_EMAIL) {
+    return { isFrozen: false, daysLeft: 999, reason: 'Super Admin Immune' };
+  }
+  if (profile.is_premium) {
+    return { isFrozen: false, daysLeft: 999, reason: 'Premium Active' };
+  }
   
-  // Manual override takes precedence if set by Admin
-  if (profile.is_frozen === true) return { isFrozen: true, daysLeft: 0, reason: 'Manually Frozen' };
-  if (profile.is_frozen === false) return { isFrozen: false, daysLeft: 7, reason: 'Manually Unfrozen' };
+  // Manual admin overrides take precedence if explicitly set in Supabase
+  if (profile.is_frozen === true) {
+    return { isFrozen: true, daysLeft: 0, reason: 'Manually Frozen by Admin' };
+  }
+  if (profile.is_frozen === false) {
+    return { isFrozen: false, daysLeft: 7, reason: 'Manually Unfrozen by Admin' };
+  }
 
-  // Automated 7-Day Calculation from created_at
+  // Automated 7-Day Calculation from registration date (created_at)
   const createdAt = profile.created_at ? new Date(profile.created_at).getTime() : Date.now();
   const now = Date.now();
   const diffMs = now - createdAt;
-  const trialMs = 7 * 24 * 60 * 60 * 1000;
+  const trialMs = 7 * 24 * 60 * 60 * 1000; // 7 Days in Milliseconds
   
   if (diffMs >= trialMs) {
     return { isFrozen: true, daysLeft: 0, reason: '7-Day Trial Expired' };
@@ -36,7 +44,7 @@ export default function SuperAdminDashboard() {
   const [allProfiles, setAllProfiles] = useState([]);
   const [pendingTeachers, setPendingTeachers] = useState([]);
   
-  // Search & Filter States
+  // Search & School Category Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState('ALL');
 
@@ -50,7 +58,7 @@ export default function SuperAdminDashboard() {
         setAuthorized(true);
         fetchMasterData();
       } else {
-        window.location.href = '/';
+        window.location.href = '/'; // Kick unverified users back home
       }
     };
     verifyIdentity();
@@ -58,9 +66,11 @@ export default function SuperAdminDashboard() {
 
   const fetchMasterData = async () => {
     setLoading(true);
+    
+    // 1. Fetch all user profiles across all tracks
     const { data: profiles } = await supabase.from('profiles').select('*');
     
-    // Sort profiles by wallet balance
+    // 2. Sort all profiles by wallet balance to compute Global Rank (#1, #2, etc.)
     const sortedByWallet = [...(profiles || [])].sort(
       (a, b) => (b.wallet_balance || 0) - (a.wallet_balance || 0)
     );
@@ -73,6 +83,7 @@ export default function SuperAdminDashboard() {
 
     setAllProfiles(profilesWithRank);
 
+    // 3. Fetch teachers awaiting verification letters audit
     const { data: teachers } = await supabase
       .from('profiles')
       .select('*')
@@ -82,6 +93,22 @@ export default function SuperAdminDashboard() {
     setLoading(false);
   };
 
+  // Teacher Approval / Rejection Handler
+  const handleUpdateTeacher = async (teacherId, status) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ verification_status: status })
+      .eq('id', teacherId);
+
+    if (!error) {
+      fetchMasterData();
+      if (selectedProfile?.id === teacherId) {
+        setSelectedProfile(prev => ({ ...prev, verification_status: status }));
+      }
+    }
+  };
+
+  // Manual Freeze / Unfreeze Dossier Toggle Handler
   const handleToggleFreezeStatus = async (profileId, currentFrozenState, profileEmail) => {
     if (profileEmail === SUPER_ADMIN_EMAIL) {
       alert("⚠️ Super Admin account (verymystery18@gmail.com) is immune and can NEVER be frozen.");
@@ -103,7 +130,7 @@ export default function SuperAdminDashboard() {
 
       alert(`Dossier successfully ${newFrozenState ? 'FROZEN' : 'UNFROZEN'}.`);
       
-      // Update local state immediately
+      // Update local inspection modal immediately
       setSelectedProfile(prev => prev ? { 
         ...prev, 
         is_frozen: newFrozenState,
@@ -117,12 +144,20 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  // Permanent Dossier Purge Handler with Double Confirmation
   const handleDeleteDossier = async (profileId, profileName) => {
-    if (!confirm(`⚠️ Are you sure you want to delete the dossier for "${profileName}"?`)) return;
-    if (!confirm(`🚨 FINAL WARNING: Deleting this dossier is permanent. Proceed?`)) return;
+    const confirmFirst = confirm(`⚠️ Are you sure you want to delete the profile dossier for "${profileName}"?`);
+    if (!confirmFirst) return;
+
+    const confirmSecond = confirm(`🚨 FINAL WARNING: Deleting this dossier is permanent and cannot be undone. Confirm deletion?`);
+    if (!confirmSecond) return;
 
     try {
-      const { error } = await supabase.from('profiles').delete().eq('id', profileId);
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', profileId);
+
       if (error) throw error;
 
       alert("User dossier purged successfully.");
@@ -134,12 +169,16 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  // Dynamically Extract All Registered School IDs for Categorization Buttons
   const schoolList = useMemo(() => {
     const schools = new Set();
-    allProfiles.forEach(p => { if (p.school_id) schools.add(p.school_id); });
+    allProfiles.forEach(p => { 
+      if (p.school_id) schools.add(p.school_id); 
+    });
     return Array.from(schools);
   }, [allProfiles]);
 
+  // Filter Roster by Search Query and Selected School Category
   const filteredProfiles = useMemo(() => {
     return allProfiles.filter(p => {
       const matchesSearch = 
@@ -149,6 +188,7 @@ export default function SuperAdminDashboard() {
         (p.role || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       if (!matchesSearch) return false;
+
       if (selectedSchoolFilter === 'ALL') return true;
       if (selectedSchoolFilter === 'PERSONAL') return p.role === 'personal' || !p.school_id;
       return p.school_id === selectedSchoolFilter;
@@ -187,7 +227,7 @@ export default function SuperAdminDashboard() {
             </span>
             <h1 className="text-3xl font-poppins font-black text-white tracking-tight">Master Control Panel</h1>
             <p className="text-xs text-slate-400 font-medium mt-1">
-              Inspect user dossiers, control 7-day freeze overrides, or adjust institutional tracks.
+              Inspect user dossiers, control 7-day freeze overrides, manage teacher applications, or execute node deletions.
             </p>
           </div>
 
@@ -196,7 +236,45 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        {/* SECTION A: SEARCH & SCHOOL FILTER CONTROLS */}
+        {/* SECTION A: TEACHER VERIFICATION AUDIT QUEUE */}
+        <div className="bg-[#0f0505] border-2 border-[#2b0808] rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl border-b-4 border-b-[#2b0808]">
+          <div className="flex items-center justify-between border-b border-[#2b0808] pb-4">
+            <h2 className="text-sm font-poppins font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              📝 Pending Teacher Verification Letters ({pendingTeachers.length})
+            </h2>
+            <span className="text-[10px] font-mono text-slate-500 font-bold">MANUAL AUDIT</span>
+          </div>
+
+          {pendingTeachers.length === 0 ? (
+            <p className="text-xs font-medium text-slate-500 py-2">No verification letters currently pending audit inside storage buckets.</p>
+          ) : (
+            <div className="space-y-3">
+              {pendingTeachers.map((teacher) => (
+                <div key={teacher.id} className="p-4 bg-[#1a0808] border border-[#2b0808] rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs font-bold shadow-md">
+                  <div className="space-y-1">
+                    <p className="text-sm text-white font-black">{teacher.name}</p>
+                    <p className="text-slate-400 font-mono font-medium">{teacher.email}</p>
+                    {teacher.verification_document_url && (
+                      <a href={teacher.verification_document_url} target="_blank" rel="noreferrer" className="inline-block text-[#ff3333] hover:underline pt-1 text-[11px] font-bold">
+                        📂 View Appointment Letter Proof
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto">
+                    <button onClick={() => handleUpdateTeacher(teacher.id, 'approved')} className="w-full md:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all text-xs font-black uppercase tracking-wider">
+                      Approve Teacher
+                    </button>
+                    <button onClick={() => handleUpdateTeacher(teacher.id, 'rejected')} className="w-full md:w-auto px-4 py-2.5 bg-rose-950/40 border border-rose-900/60 hover:bg-rose-950 text-rose-400 rounded-xl transition-all text-xs font-black uppercase tracking-wider">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SECTION B: SEARCH & SCHOOL FILTER CONTROLS */}
         <div className="bg-[#0f0505] border-2 border-[#2b0808] rounded-3xl p-6 space-y-6 shadow-2xl border-b-4 border-b-[#2b0808]">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#2b0808] pb-4">
             <div>
@@ -206,6 +284,7 @@ export default function SuperAdminDashboard() {
               <p className="text-[11px] text-slate-500 font-medium mt-0.5">Filter by school hubs or query user profiles dynamically.</p>
             </div>
 
+            {/* Real-time Search Input */}
             <div className="w-full md:w-72 relative">
               <input 
                 type="text"
@@ -225,7 +304,7 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
 
-          {/* SCHOOL HUB CATEGORIES */}
+          {/* DYNAMIC SCHOOL HUB CLASSIFICATION TABS */}
           <div className="space-y-2">
             <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Categorize By Institutional Hub:</span>
             <div className="flex flex-wrap gap-2">
@@ -258,61 +337,67 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
 
-          {/* USER CARD GRID */}
+          {/* CLICKABLE USER CARD GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-            {filteredProfiles.map((p) => {
-              const trial = calculateTrialStatus(p);
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedProfile(p)}
-                  className="bg-[#1a0808] border-2 border-[#2b0808] hover:border-[#7a0000] p-5 rounded-2xl shadow-xl hover:shadow-[0_10px_25px_rgba(122,0,0,0.3)] transition-all cursor-pointer group space-y-3 relative overflow-hidden"
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="truncate">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-[#0f0505] text-[#ff3333] border border-[#2b0808]">
-                          #{p.rank}
-                        </span>
-                        <h3 className="font-poppins font-black text-sm text-white group-hover:text-[#ff3333] transition-colors truncate">
-                          {p.name || 'Unnamed Account'}
-                        </h3>
+            {filteredProfiles.length === 0 ? (
+              <div className="col-span-full text-center py-12 bg-[#1a0808] border border-[#2b0808] rounded-2xl text-slate-500 text-xs font-bold">
+                No user profiles match the selected search query or school category.
+              </div>
+            ) : (
+              filteredProfiles.map((p) => {
+                const trial = calculateTrialStatus(p);
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setSelectedProfile(p)}
+                    className="bg-[#1a0808] border-2 border-[#2b0808] hover:border-[#7a0000] p-5 rounded-2xl shadow-xl hover:shadow-[0_10px_25px_rgba(122,0,0,0.3)] transition-all cursor-pointer group space-y-3 relative overflow-hidden"
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="truncate">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-[#0f0505] text-[#ff3333] border border-[#2b0808]">
+                            #{p.rank}
+                          </span>
+                          <h3 className="font-poppins font-black text-sm text-white group-hover:text-[#ff3333] transition-colors truncate">
+                            {p.name || 'Unnamed Account'}
+                          </h3>
+                        </div>
+                        <p className="text-[11px] font-mono text-slate-400 truncate mt-1">{p.email}</p>
                       </div>
-                      <p className="text-[11px] font-mono text-slate-400 truncate mt-1">{p.email}</p>
-                    </div>
 
-                    <span className="px-2.5 py-0.5 bg-[#0f0505] border border-[#2b0808] text-[#ff3333] rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap">
-                      {p.role}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-[#2b0808] text-xs font-bold">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-wider text-slate-500 block">Balance</span>
-                      <span className="text-white font-mono">₹{(p.wallet_balance || 0).toLocaleString('en-IN')}</span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-[9px] uppercase tracking-wider text-slate-500 block">Trial / Lock</span>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
-                        p.email === SUPER_ADMIN_EMAIL 
-                          ? 'bg-sky-950/60 text-sky-400 border-sky-800' 
-                          : trial.isFrozen 
-                            ? 'bg-rose-950/80 text-rose-400 border-rose-800 animate-pulse' 
-                            : 'bg-emerald-950/60 text-emerald-400 border-emerald-800'
-                      }`}>
-                        {p.email === SUPER_ADMIN_EMAIL ? 'IMMUNE' : trial.isFrozen ? 'FROZEN 🔒' : 'ACTIVE 🔓'}
+                      <span className="px-2.5 py-0.5 bg-[#0f0505] border border-[#2b0808] text-[#ff3333] rounded-full text-[9px] font-black uppercase tracking-wider whitespace-nowrap">
+                        {p.role}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="text-[10px] text-slate-500 font-bold flex items-center justify-between pt-1 group-hover:text-slate-300">
-                    <span className="text-slate-600 font-mono text-[9px]">Hub: {p.school_id || 'Personal'}</span>
-                    <span>Inspect Details ➔</span>
+                    <div className="flex items-center justify-between pt-2 border-t border-[#2b0808] text-xs font-bold">
+                      <div>
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 block">Balance</span>
+                        <span className="text-white font-mono">₹{(p.wallet_balance || 0).toLocaleString('en-IN')}</span>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 block">Trial / Lock</span>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                          p.email === SUPER_ADMIN_EMAIL 
+                            ? 'bg-sky-950/60 text-sky-400 border-sky-800' 
+                            : trial.isFrozen 
+                              ? 'bg-rose-950/80 text-rose-400 border-rose-800 animate-pulse' 
+                              : 'bg-emerald-950/60 text-emerald-400 border-emerald-800'
+                        }`}>
+                          {p.email === SUPER_ADMIN_EMAIL ? 'IMMUNE' : trial.isFrozen ? 'FROZEN 🔒' : 'ACTIVE 🔓'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-[10px] text-slate-500 font-bold flex items-center justify-between pt-1 group-hover:text-slate-300">
+                      <span className="text-slate-600 font-mono text-[9px]">Hub: {p.school_id || 'Personal'}</span>
+                      <span>Inspect Details ➔</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </section>
@@ -349,7 +434,7 @@ export default function SuperAdminDashboard() {
                 </button>
               </div>
 
-              {/* Modal Body */}
+              {/* Modal Body Canvas */}
               <div className="p-6 overflow-y-auto space-y-6 text-left flex-1">
                 
                 {/* Freeze Status Banner */}
@@ -384,38 +469,49 @@ export default function SuperAdminDashboard() {
                   )}
                 </div>
 
-                {/* Balance Banner */}
+                {/* Financial Position Banner */}
                 <div className="bg-gradient-to-br from-[#7a0000] to-[#4a0000] p-5 rounded-2xl text-white shadow-lg space-y-1 border border-[#a30000]/40">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-rose-200/80">
-                    Current Virtual Wallet Balance
-                  </p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-rose-200/80">
+                      Current Virtual Wallet Balance
+                    </p>
+                    <span className="text-[10px] font-mono font-bold text-white bg-black/40 px-2.5 py-0.5 rounded-full border border-white/10">
+                      Portfolio Rank: #{selectedProfile.rank}
+                    </span>
+                  </div>
                   <p className="text-3xl font-poppins font-black tracking-tight font-mono">
                     ₹{(selectedProfile.wallet_balance || 0).toLocaleString('en-IN')}
                   </p>
                 </div>
 
-                {/* Metadata Grid */}
+                {/* Complete Metadata Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold">
+                  
+                  {/* UUID */}
                   <div className="p-3.5 bg-[#1a0808] border border-[#2b0808] rounded-xl space-y-1">
                     <span className="text-[10px] uppercase text-slate-500 tracking-wider">User UUID</span>
                     <p className="text-white font-mono break-all text-[11px]">{selectedProfile.id}</p>
                   </div>
 
+                  {/* EMAIL */}
                   <div className="p-3.5 bg-[#1a0808] border border-[#2b0808] rounded-xl space-y-1">
                     <span className="text-[10px] uppercase text-slate-500 tracking-wider">Email Handle</span>
                     <p className="text-slate-300 font-mono text-[11px]">{selectedProfile.email}</p>
                   </div>
 
-                  <div className={`p-3.5 rounded-xl space-y-1 ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
+                  {/* SCHOOL HUB CODE (Greyed if personal track) */}
+                  <div className={`p-3.5 rounded-xl space-y-1 transition-all ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40 select-none' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
                     <span className="text-[10px] uppercase text-slate-500 tracking-wider">School Hub Code</span>
                     <p className="text-white font-mono">{selectedProfile.role === 'personal' ? 'N/A (Personal Track)' : (selectedProfile.school_id || 'Not Enrolled')}</p>
                   </div>
 
-                  <div className={`p-3.5 rounded-xl space-y-1 ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
+                  {/* SPECIFIC CLASS ID (Greyed if personal track) */}
+                  <div className={`p-3.5 rounded-xl space-y-1 transition-all ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40 select-none' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
                     <span className="text-[10px] uppercase text-slate-500 tracking-wider">Specific Class ID</span>
                     <p className="text-white font-mono">{selectedProfile.role === 'personal' ? 'N/A (Personal Track)' : (selectedProfile.specific_class_id || 'Unassigned')}</p>
                   </div>
 
+                  {/* REGISTRATION DATE */}
                   <div className="p-3.5 bg-[#1a0808] border border-[#2b0808] rounded-xl space-y-1">
                     <span className="text-[10px] uppercase text-slate-500 tracking-wider">Registration Date</span>
                     <p className="text-slate-300 font-mono text-[11px]">
@@ -423,15 +519,41 @@ export default function SuperAdminDashboard() {
                     </p>
                   </div>
 
-                  <div className="p-3.5 bg-[#1a0808] border border-[#2b0808] rounded-xl space-y-1">
+                  {/* QUIZ STANDINGS (Greyed if personal track) */}
+                  <div className={`p-3.5 rounded-xl space-y-1 transition-all ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40 select-none' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
                     <span className="text-[10px] uppercase text-slate-500 tracking-wider">Quiz Standings</span>
                     <p className="text-amber-400 font-mono">{selectedProfile.role === 'personal' ? 'N/A (Personal Track)' : `${selectedProfile.quiz_points || 0} PTS`}</p>
                   </div>
+
+                  {/* STUDENT VERIFICATION STATUS (Greyed if personal track) */}
+                  <div className={`p-3.5 rounded-xl space-y-1 transition-all ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40 select-none' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
+                    <span className="text-[10px] uppercase text-slate-500 tracking-wider">Student Verification Status</span>
+                    <p className={selectedProfile.role === 'personal' ? 'text-slate-500' : selectedProfile.student_approved ? 'text-emerald-400 font-black' : 'text-amber-400 font-black'}>
+                      {selectedProfile.role === 'personal' ? 'N/A (Personal Track)' : (selectedProfile.student_approved ? 'Cleared / Approved' : 'Pending Approval')}
+                    </p>
+                  </div>
+
+                  {/* TEACHER AUDIT STATUS (Greyed if personal track) */}
+                  <div className={`p-3.5 rounded-xl space-y-1 transition-all ${selectedProfile.role === 'personal' ? 'bg-[#0f0505] border border-[#2b0808]/50 opacity-40 select-none' : 'bg-[#1a0808] border border-[#2b0808]'}`}>
+                    <span className="text-[10px] uppercase text-slate-500 tracking-wider">Teacher Audit Status</span>
+                    <p className={selectedProfile.role === 'personal' ? 'text-slate-500' : selectedProfile.verification_status === 'approved' ? 'text-emerald-400 font-black' : 'text-amber-400 font-black'}>
+                      {selectedProfile.role === 'personal' ? 'N/A (Personal Track)' : (selectedProfile.verification_status || 'N/A')}
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Security Safeguard Notice */}
+                <div className="p-4 bg-[#1a0808] border border-[#2b0808] rounded-xl space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">🔒 Security & Authentication Note</span>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                    Passwords are protected by Supabase Auth using one-way cryptographic hashing (bcrypt/argon2). Plaintext passwords are never stored in the database or transmitted to client applications.
+                  </p>
                 </div>
 
               </div>
 
-              {/* Modal Footer */}
+              {/* Modal Footer Controls */}
               <div className="p-6 border-t border-[#2b0808] bg-[#1a0808] flex items-center justify-between gap-3">
                 <button
                   onClick={() => handleDeleteDossier(selectedProfile.id, selectedProfile.name || 'User Account')}
