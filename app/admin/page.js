@@ -44,37 +44,73 @@ export default function SuperAdminDashboard() {
     if (!error) fetchMasterData();
   };
 
-  if (loading) return <div className="text-center py-24 font-bold text-xs animate-pulse text-slate-400">Securing Admin Firewall...</div>;
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative">
+        <Navbar />
+        <div className="max-w-6xl mx-auto px-6 pt-32 pb-24 flex justify-center">
+          <div className="space-y-4 text-center">
+            <div className="w-12 h-12 border-4 border-[#ff3333] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider animate-pulse">Securing Admin Firewall Layer...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (!authorized) return null;
 
   return (
-    <main className="min-h-screen bg-[#f5f7ff] text-[#1e1b4b] antialiased pb-12">
+    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-24 pb-20">
       <Navbar />
-      <section className="max-w-6xl mx-auto px-6 pt-12 space-y-8">
-        <div className="border-b border-slate-200 pb-4">
-          <h1 className="text-3xl font-black text-slate-950">Master Control Panel</h1>
-          <p className="text-xs text-slate-400">Ultimate command overview database layer for the entire StockBazaar application network.</p>
+      
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8 animate-fadeInFast">
+        {/* HEADER BLOCK */}
+        <div className="border-b border-[#2b0808] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span className="bg-[#1a0808] text-[#ff3333] border border-[#2b0808] text-[9px] uppercase tracking-widest font-black px-3 py-1 rounded-full shadow-inner mb-2 inline-block">
+              🛡️ Super Admin Clearance
+            </span>
+            <h1 className="text-3xl font-poppins font-black text-white tracking-tight">Master Control Panel</h1>
+            <p className="text-xs text-slate-400 font-medium mt-1">Ultimate command overview database layer for the entire Bull Run application network.</p>
+          </div>
+
+          <div className="bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-xl text-xs font-mono text-slate-400">
+            Node ID: <span className="text-[#ff3333] font-bold">{SUPER_ADMIN_EMAIL}</span>
+          </div>
         </div>
 
         {/* SECTION A: THE TEACHER AUDIT QUEUE */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
-          <h2 className="text-base font-black text-slate-950 uppercase tracking-wider text-amber-500">📝 Teacher Verification Audit Queue ({pendingTeachers.length})</h2>
+        <div className="bg-[#0f0505] border-2 border-[#2b0808] rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl border-b-4 border-b-[#2b0808]">
+          <div className="flex items-center justify-between border-b border-[#2b0808] pb-4">
+            <h2 className="text-sm font-poppins font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              📝 Teacher Verification Audit Queue ({pendingTeachers.length})
+            </h2>
+            <span className="text-[10px] font-mono text-slate-500 font-bold">MANUAL REVIEW</span>
+          </div>
+
           {pendingTeachers.length === 0 ? (
-            <p className="text-xs font-medium text-slate-400 py-2">No verification letters currently pending audit inside the storage buckets.</p>
+            <p className="text-xs font-medium text-slate-500 py-3">No verification letters currently pending audit inside the storage buckets.</p>
           ) : (
             <div className="space-y-3">
               {pendingTeachers.map((teacher) => (
-                <div key={teacher.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs font-bold">
-                  <div className="space-y-0.5">
-                    <p className="text-sm text-slate-950">{teacher.name}</p>
-                    <p className="text-slate-400 font-medium font-mono">{teacher.email}</p>
+                <div key={teacher.id} className="p-4 bg-[#1a0808] border border-[#2b0808] rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs font-bold shadow-md">
+                  <div className="space-y-1">
+                    <p className="text-sm text-white font-black">{teacher.name}</p>
+                    <p className="text-slate-400 font-mono font-medium">{teacher.email}</p>
                     {teacher.verification_document_url && (
-                      <a href={teacher.verification_document_url} target="_blank" rel="noreferrer" className="inline-block text-blue-500 hover:underline pt-1">📂 View Appointment Letter Proof</a>
+                      <a href={teacher.verification_document_url} target="_blank" rel="noreferrer" className="inline-block text-[#ff3333] hover:underline pt-1 text-[11px] font-bold">
+                        📂 View Appointment Letter Proof
+                      </a>
                     )}
                   </div>
                   <div className="flex gap-2 w-full md:w-auto">
-                    <button onClick={() => handleUpdateTeacher(teacher.id, 'approved')} className="w-full md:w-auto px-4 py-2 bg-emerald-500 text-white rounded-xl shadow-sm hover:bg-emerald-600">Approve Teacher</button>
-                    <button onClick={() => handleUpdateTeacher(teacher.id, 'rejected')} className="w-full md:w-auto px-4 py-2 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl hover:bg-rose-100">Reject</button>
+                    <button onClick={() => handleUpdateTeacher(teacher.id, 'approved')} className="w-full md:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all text-xs font-black uppercase tracking-wider">
+                      Approve Teacher
+                    </button>
+                    <button onClick={() => handleUpdateTeacher(teacher.id, 'rejected')} className="w-full md:w-auto px-4 py-2.5 bg-rose-950/40 border border-rose-900/60 hover:bg-rose-950 text-rose-400 rounded-xl transition-all text-xs font-black uppercase tracking-wider">
+                      Reject
+                    </button>
                   </div>
                 </div>
               ))}
@@ -83,12 +119,18 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* SECTION B: GLOBAL MASTER ROSTER DATA MONITOR */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 overflow-hidden">
-          <h2 className="text-base font-black text-slate-950 uppercase tracking-wider text-slate-400">📊 Global Application User Roster ({allProfiles.length})</h2>
+        <div className="bg-[#0f0505] border-2 border-[#2b0808] rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl border-b-4 border-b-[#2b0808] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#2b0808] pb-4">
+            <h2 className="text-sm font-poppins font-black text-slate-300 uppercase tracking-wider flex items-center gap-2">
+              📊 Global Application User Roster ({allProfiles.length})
+            </h2>
+            <span className="text-[10px] font-mono text-slate-500 font-bold">LIVE DATABASE SYNCHRONIZED</span>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider font-bold">
+                <tr className="border-b border-[#2b0808] text-slate-500 uppercase tracking-wider font-black text-[10px]">
                   <th className="pb-3 pr-2">Full Name</th>
                   <th className="pb-3 pr-2">Email</th>
                   <th className="pb-3 pr-2">Track</th>
@@ -96,22 +138,26 @@ export default function SuperAdminDashboard() {
                   <th className="pb-3 text-right">Cash Balance</th>
                 </tr>
               </thead>
-              <tbody className="font-medium text-slate-700 divide-y divide-slate-50">
+              <tbody className="font-medium text-slate-300 divide-y divide-[#2b0808]/60">
                 {allProfiles.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 pr-2 font-black text-slate-950">{p.name}</td>
-                    <td className="py-3 pr-2 font-mono text-slate-400">{p.email}</td>
-                    <td className="py-3 pr-2 uppercase font-black tracking-widest text-[9px] text-[#4F8EF7]">{p.role}</td>
-                    <td className="py-3 pr-2">
+                  <tr key={p.id} className="hover:bg-[#1a0808]/80 transition-colors">
+                    <td className="py-3.5 pr-2 font-black text-white">{p.name}</td>
+                    <td className="py-3.5 pr-2 font-mono text-slate-400">{p.email}</td>
+                    <td className="py-3.5 pr-2 uppercase font-black tracking-widest text-[9px] text-[#ff3333]">{p.role}</td>
+                    <td className="py-3.5 pr-2">
                       {p.role === 'teacher' ? (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.verification_status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{p.verification_status}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${p.verification_status === 'approved' ? 'bg-emerald-950/50 border-emerald-800 text-emerald-400' : 'bg-amber-950/50 border-amber-800 text-amber-400'}`}>
+                          {p.verification_status}
+                        </span>
                       ) : p.role === 'student' ? (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.student_approved ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{p.student_approved ? 'cleared' : 'pending'}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${p.student_approved ? 'bg-emerald-950/50 border-emerald-800 text-emerald-400' : 'bg-amber-950/50 border-amber-800 text-amber-400'}`}>
+                          {p.student_approved ? 'cleared' : 'pending'}
+                        </span>
                       ) : (
-                        <span className="text-slate-300">—</span>
+                        <span className="text-slate-600 font-mono">—</span>
                       )}
                     </td>
-                    <td className="py-3 text-right font-mono font-bold text-slate-950">₹{(p.wallet_balance || 0).toLocaleString('en-IN')}</td>
+                    <td className="py-3.5 text-right font-mono font-black text-white">₹{(p.wallet_balance || 0).toLocaleString('en-IN')}</td>
                   </tr>
                 ))}
               </tbody>
