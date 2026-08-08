@@ -43,7 +43,6 @@ export default function Leaderboard() {
   }, [rankingScope, profile]);
 
   const fetchRankings = async () => {
-    // Basic catch if profiles are still loading
     let query = supabase.from('profiles').select('name, role, school_id, specific_class_id, wallet_balance');
 
     // Filter scopes based on user profile configurations
@@ -67,29 +66,35 @@ export default function Leaderboard() {
   const isPersonalTrack = profile?.role === 'personal';
 
   return (
-    <main className="min-h-screen bg-[#f5f7ff] text-[#1e1b4b] antialiased pb-20">
+    <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-24 pb-20">
       <Navbar />
 
-      <section className="max-w-4xl mx-auto px-6 pt-16 space-y-8">
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8 relative z-10 animate-fadeInFast">
+        
+        {/* HEADER BLOCK */}
         <div className="text-center space-y-2">
-          <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-inner">
+          <span className="bg-[#1a0808] border border-[#2b0808] text-[#ff3333] text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-inner inline-block">
             🏆 REAL-TIME ARENA MARGINS
           </span>
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight">Global Trading Leaderboard</h1>
-          <p className="text-slate-500 text-xs font-medium max-w-md mx-auto">
+          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-poppins">
+            Global Trading Leaderboard
+          </h1>
+          <p className="text-slate-400 text-xs font-medium max-w-md mx-auto">
             Live standings tracking real-time portfolio allocations and system-wide sandbox capital performance.
           </p>
         </div>
 
         {/* Dynamic Leaderboard Tab Selectors */}
         <div className="flex justify-center">
-          <div className="bg-white border border-slate-200 p-1.5 rounded-2xl inline-flex gap-1 shadow-sm">
+          <div className="bg-[#0f0505] border-2 border-[#2b0808] p-1.5 rounded-2xl inline-flex gap-1 shadow-xl">
             
             {/* World Ranking (Always Unlocked) */}
             <button
               onClick={() => setRankingScope('world')}
               className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
-                rankingScope === 'world' ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                rankingScope === 'world' 
+                  ? 'bg-[#7a0000] border border-[#a30000] text-white shadow-md' 
+                  : 'text-slate-400 hover:text-white hover:bg-[#1a0808]'
               }`}
             >
               🌐 World Ranking
@@ -101,10 +106,10 @@ export default function Leaderboard() {
               onClick={() => setRankingScope('school')}
               className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
                 isPersonalTrack 
-                  ? 'opacity-40 cursor-not-allowed text-slate-400' 
+                  ? 'opacity-30 cursor-not-allowed text-slate-600' 
                   : rankingScope === 'school' 
-                    ? 'bg-[#4F8EF7] text-white shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-[#7a0000] border border-[#a30000] text-white shadow-md' 
+                    : 'text-slate-400 hover:text-white hover:bg-[#1a0808]'
               }`}
             >
               🏫 School Ranking
@@ -116,10 +121,10 @@ export default function Leaderboard() {
               onClick={() => setRankingScope('class')}
               className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
                 isPersonalTrack 
-                  ? 'opacity-40 cursor-not-allowed text-slate-400' 
+                  ? 'opacity-30 cursor-not-allowed text-slate-600' 
                   : rankingScope === 'class' 
-                    ? 'bg-purple-600 text-white shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-[#7a0000] border border-[#a30000] text-white shadow-md' 
+                    : 'text-slate-400 hover:text-white hover:bg-[#1a0808]'
               }`}
             >
               📋 Class Ranking
@@ -128,25 +133,27 @@ export default function Leaderboard() {
           </div>
         </div>
 
-        {/* Leaderboard Ranking Table */}
-        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-md">
+        {/* Leaderboard Ranking Table Card */}
+        <div className="bg-[#0f0505] border-2 border-[#2b0808] border-b-4 border-b-[#7a0000] rounded-3xl overflow-hidden shadow-2xl">
           {loading ? (
-            <div className="p-12 text-center text-xs font-bold text-slate-400 animate-pulse">Syncing Standings Data Matrix...</div>
+            <div className="p-12 text-center text-xs font-bold text-slate-400 animate-pulse">
+              Syncing Standings Data Matrix...
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <tr className="bg-[#1a0808] border-b border-[#2b0808] text-[10px] font-black uppercase tracking-wider text-slate-400">
                     <th className="p-4 w-20 text-center">Rank</th>
                     <th className="p-4">Trader Name</th>
                     <th className="p-4">Track Context</th>
                     <th className="p-4 text-right">Total Portfolio Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs font-bold text-slate-700">
+                <tbody className="divide-y divide-[#2b0808] text-xs font-bold text-slate-300">
                   {leaderboardData.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="p-12 text-center text-slate-400 font-medium italic">
+                      <td colSpan="4" className="p-12 text-center text-slate-500 font-medium italic">
                         No active entries registered inside this tracking scope partition.
                       </td>
                     </tr>
@@ -154,24 +161,41 @@ export default function Leaderboard() {
                     leaderboardData.map((trader, idx) => {
                       const isCurrentUser = user && trader.name === profile?.name;
                       return (
-                        <tr key={idx} className={`transition-colors ${isCurrentUser ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-50/40'}`}>
-                          <td className="p-4 text-center font-black text-slate-950 font-mono text-sm">
+                        <tr 
+                          key={idx} 
+                          className={`transition-colors ${
+                            isCurrentUser 
+                              ? 'bg-[#7a0000]/25 border-y border-[#7a0000]/50 hover:bg-[#7a0000]/35' 
+                              : 'hover:bg-[#1a0808]/80'
+                          }`}
+                        >
+                          <td className="p-4 text-center font-black text-white font-mono text-sm">
                             {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
                           </td>
                           <td className="p-4">
-                            <p className={`font-black ${isCurrentUser ? 'text-blue-600' : 'text-slate-950'}`}>
-                              {trader.name} {isCurrentUser && <span className="text-[9px] uppercase tracking-wide bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1 font-black">You</span>}
+                            <p className={`font-black ${isCurrentUser ? 'text-[#ff3333]' : 'text-white'}`}>
+                              {trader.name} {isCurrentUser && (
+                                <span className="text-[9px] uppercase tracking-wide bg-[#7a0000] text-white px-1.5 py-0.5 rounded ml-1 font-black shadow-sm">
+                                  You
+                                </span>
+                              )}
                             </p>
-                            {trader.school_id && <p className="text-[9px] text-slate-400 font-mono mt-0.5 font-medium uppercase">Hub: {trader.school_id}</p>}
+                            {trader.school_id && (
+                              <p className="text-[9px] text-slate-500 font-mono mt-0.5 font-medium uppercase">
+                                Hub: {trader.school_id}
+                              </p>
+                            )}
                           </td>
                           <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] uppercase font-black ${
-                              trader.role === 'personal' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                            <span className={`px-2 py-0.5 rounded-md text-[9px] uppercase font-black border ${
+                              trader.role === 'personal' 
+                                ? 'bg-[#1a0808] text-slate-300 border-[#2b0808]' 
+                                : 'bg-[#1a0808] text-[#ff3333] border-[#2b0808]'
                             }`}>
                               {trader.role}
                             </span>
                           </td>
-                          <td className="p-4 text-right font-mono font-black text-slate-950 text-sm">
+                          <td className="p-4 text-right font-mono font-black text-white text-sm">
                             ₹{(trader.wallet_balance || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
