@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 
-// Static configurations placed outside the render tree
+// Static company registry configuration
 const STATIC_COMPANY_REGISTRY = [
   { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', yahoo: 'RELIANCE.NS', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
   { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', yahoo: 'TCS.NS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
@@ -391,25 +391,25 @@ export default function CombinedSimulator() {
     <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-16 pb-16">
       <Navbar />
 
-      {/* STICKY SELECTOR TAB BAR (Aligned cleanly beneath fixed header) */}
-      <div className="bg-[#0f0505] border-b border-[#2b0808] sticky top-[60px] z-40 shadow-xl backdrop-blur-md">
+      {/* STICKY SELECTOR TAB BAR (Pins directly at top-16 beneath Navbar) */}
+      <div className="bg-[#0f0505] border-b border-[#2b0808] sticky top-16 z-40 shadow-xl backdrop-blur-md">
         <div className="max-w-[1240px] mx-auto px-4 flex gap-6">
           <button 
             onClick={() => setActiveTab('real')}
-            className={`py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'real' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
+            className={`py-3.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'real' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
             📈 Real Indian Equity Simulator
           </button>
           <button 
             onClick={() => setActiveTab('game')}
-            className={`py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'game' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
+            className={`py-3.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'game' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
             🏆 30-Day Volatility Challenge
           </button>
         </div>
       </div>
 
-      <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
+      <div className="max-w-[1240px] mx-auto px-4 pt-6 space-y-6">
 
         {/* ── INTERFACE PANEL A: REAL SIMULATOR MODE ── */}
         {activeTab === 'real' && (
@@ -626,7 +626,7 @@ export default function CombinedSimulator() {
                     <div key={st.sym} className="bg-[#0f0505] border border-[#2b0808] p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                       <div>
                         <div className="font-black text-white text-base">{st.sym}</div>
-                        <div className="text-xs text-slate-400 font-medium">{st.name}</div>
+                        <div className="text-xs text-[#94a3b8] font-medium">{st.name}</div>
                       </div>
                       
                       <div className="flex gap-6 items-center">
