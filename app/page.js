@@ -1,4 +1,5 @@
 'use client';
+
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { useState, useEffect } from 'react';
@@ -134,26 +135,23 @@ export default function Home() {
     if (!error) window.location.reload();
   };
 
+  // COMPLETE ACCOUNT PURGE (DELETES FROM AUTH.USERS AND PUBLIC.PROFILES)
   const handlePermanentDeletion = async () => {
-    if (!confirm("CRITICAL WARNING: This will permanently wipe your profile and database nodes. Proceed?")) return;
+    if (!confirm("CRITICAL WARNING: This will permanently wipe your profile and authentication nodes. Proceed?")) return;
+    if (!confirm("🚨 FINAL WARNING: Deleting your account is permanent and cannot be undone.")) return;
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      // Call Supabase RPC function to purge user from auth.users (cascades to public.profiles)
+      const { error } = await supabase.rpc('delete_user_account');
 
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', session.user.id);
-
-      if (dbError) throw dbError;
+      if (error) throw error;
 
       await supabase.auth.signOut();
-      alert("Account completely dropped from database registers.");
+      alert("Account completely deleted from database registers.");
       window.location.reload();
     } catch (err) {
       console.error("Deletion error:", err);
-      alert("Failed to drop database profile row.");
+      alert(`Failed to delete account: ${err.message}`);
     }
   };
 
@@ -193,11 +191,9 @@ export default function Home() {
           </div>
           
           {/* MAIN HEADLINE */}
-          <h1 className="text-4xl sm:text-7xl font-black tracking-tight leading-none text-white">
+          <h1 className="text-4xl sm:text-7xl font-black tracking-tight leading-none text-white font-poppins">
             Own the Market <br className="hidden sm:inline" />
             Before the{' '}
-            
-            {/* "Bell Rings" Headline Focus */}
             <span className="inline-block bg-gradient-to-r from-[#e24040] via-[#bd7f7f] to-[#e24040] bg-clip-text text-transparent font-black filter drop-shadow-[2px_2px_0px_#4a0000] drop-shadow-[0_10px_20px_rgba(226,64,64,0.3)] hover:scale-105 transition-transform duration-300 cursor-default">
               Bell Rings
             </span>
@@ -301,10 +297,10 @@ export default function Home() {
                 </div>
               )}
 
-              {/* DANGER ZONE */}
+              {/* DANGER ZONE: ACCOUNT DELETION */}
               <div className="p-3.5 border border-rose-900/30 bg-rose-950/20 rounded-2xl space-y-1">
                 <h4 className="text-xs font-black text-rose-400 uppercase tracking-wider">⚠️ Danger Zone</h4>
-                <p className="text-[10px] text-slate-400 font-medium">Wiping your profile is immediate, final, and deletes all linked transaction data.</p>
+                <p className="text-[10px] text-slate-400 font-medium">Wiping your account is immediate, final, and deletes all user and database data.</p>
                 <button onClick={handlePermanentDeletion} className="mt-1 px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white font-black text-[10px] rounded-xl transition-all">
                   Delete My Account Completely
                 </button>
@@ -352,7 +348,7 @@ export default function Home() {
       {/* LIVE MARKET SIMULATOR TERMINAL CARD */}
       <section id="simulator" className="max-w-7xl mx-auto px-4 sm:px-6 pt-28 relative z-10 flex flex-col items-center justify-center animate-fadeIn scroll-mt-24">
         <div className="border-b border-[#2b0808] pb-6 mb-12 text-center max-w-xl w-full">
-          <h2 className="text-2xl font-black text-white">Terminal Engine Simulator</h2>
+          <h2 className="text-2xl font-black text-white font-poppins">Terminal Engine Simulator</h2>
           <p className="text-xs text-slate-400 mt-1 font-medium">Real-time exchange tracking interfaces driven by high-accuracy pipeline proxies.</p>
         </div>
 
@@ -423,28 +419,28 @@ export default function Home() {
       {/* INTEGRATED LEARNING ACADEMY CARDS */}
       <section id="courses" className="max-w-6xl mx-auto px-4 sm:px-6 pt-32 relative z-10 space-y-8 scroll-mt-24">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-black tracking-tight text-white">Integrated Trading Academy</h2>
+          <h2 className="text-3xl font-black tracking-tight text-white font-poppins">Integrated Trading Academy</h2>
           <p className="text-slate-400 text-xs max-w-md mx-auto font-medium">Master tactical market theories through dynamic self-paced sandbox training paths.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="card bg-[#0f0505] border-2 border-[#2b0808] p-6 rounded-3xl space-y-4 shadow-xl hover:border-[#7a0000] hover:-translate-y-1 hover:shadow-[0_15px_30px_rgba(122,0,0,0.3)] transition-all duration-300">
             <div className="h-10 w-10 rounded-xl bg-[#1a0808] border border-[#2b0808] text-[#ff3333] flex items-center justify-center text-lg font-black">01</div>
-            <h3 className="font-black text-base text-white">Market Foundations</h3>
+            <h3 className="font-black text-base text-white font-poppins">Market Foundations</h3>
             <p className="text-xs text-slate-400 leading-relaxed font-medium">Understand technical asset pricing loops, stock charts, order structures, and index operations across primary exchanges.</p>
             <div className="pt-2"><span className="text-[10px] font-black uppercase tracking-wider bg-[#1a0808] border border-[#2b0808] text-rose-300 px-2.5 py-1 rounded-md">8 Modules • Beginner</span></div>
           </div>
 
           <div className="card bg-[#0f0505] border-2 border-[#2b0808] p-6 rounded-3xl space-y-4 shadow-xl hover:border-[#7a0000] hover:-translate-y-1 hover:shadow-[0_15px_30px_rgba(122,0,0,0.3)] transition-all duration-300">
             <div className="h-10 w-10 rounded-xl bg-[#1a0808] border border-[#2b0808] text-[#ff3333] flex items-center justify-center text-lg font-black">02</div>
-            <h3 className="font-black text-base text-white">Technical Analysis</h3>
+            <h3 className="font-black text-base text-white font-poppins">Technical Analysis</h3>
             <p className="text-xs text-slate-400 leading-relaxed font-medium">Map patterns using support levels, moving averages, and volume indicators to execute quantitative simulator mock plays.</p>
             <div className="pt-2"><span className="text-[10px] font-black uppercase tracking-wider bg-[#1a0808] border border-[#2b0808] text-rose-300 px-2.5 py-1 rounded-md">12 Modules • Intermediate</span></div>
           </div>
 
           <div className="card bg-[#0f0505] border-2 border-[#2b0808] p-6 rounded-3xl space-y-4 shadow-xl hover:border-[#7a0000] hover:-translate-y-1 hover:shadow-[0_15px_30px_rgba(122,0,0,0.3)] transition-all duration-300">
             <div className="h-10 w-10 rounded-xl bg-[#1a0808] border border-[#2b0808] text-[#ff3333] flex items-center justify-center text-lg font-black">03</div>
-            <h3 className="font-black text-base text-white">Portfolio Risk Management</h3>
+            <h3 className="font-black text-base text-white font-poppins">Portfolio Risk Management</h3>
             <p className="text-xs text-slate-400 leading-relaxed font-medium">Mitigate drawdown via position sizing models, strict asset tracking ratios, and dynamic algorithmic hedging criteria.</p>
             <div className="pt-2"><span className="text-[10px] font-black uppercase tracking-wider bg-[#1a0808] border border-[#2b0808] text-rose-300 px-2.5 py-1 rounded-md">6 Modules • Advanced</span></div>
           </div>
@@ -458,7 +454,7 @@ export default function Home() {
             <span className="bg-[#7a0000]/20 text-[#ff3333] font-mono font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded border border-[#7a0000]/40">
               Campus Classroom Access
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight text-white">Launch Custom Classroom Tournaments</h2>
+            <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight text-white font-poppins">Launch Custom Classroom Tournaments</h2>
             <p className="text-slate-400 text-xs leading-relaxed max-w-lg mx-auto md:mx-0 font-medium">
               Deploy programmatic classroom sandboxes, initiate specific challenge milestones, and monitor student metrics through clean analytical reporting tables.
             </p>
