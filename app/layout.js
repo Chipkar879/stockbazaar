@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 // TOTAL REWRITTEN METADATA AND SEO CONFIGURATION
 export const metadata = {
   title: {
-    default: "Stockbazaar | Premium Stock Market Sandbox Arena",
-    template: "%s | Stockbazaar"
+    default: "Bull Run | Premium Stock Market Sandbox Arena",
+    template: "%s | Bull Run"
   },
   description: "Practice paper trading risk-free with live NSE market feeds, join custom classroom trading tournaments, and climb the standings leaderboard.",
   keywords: [
@@ -33,7 +33,7 @@ export const metadata = {
     // Quiz & Gamification Terms
     "finance mock quiz", 
     "classroom trading game", 
-    "Stockbazaar sandbox",
+    "Bull Run sandbox",
     "financial intelligence battleground",
     "stock market game for schools",
     "daily finance mcq challenge",
@@ -52,16 +52,16 @@ export const metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Stockbazaar | Classroom Stock Market Sandbox Arena",
+    title: "Bull Run | Classroom Stock Market Sandbox Arena",
     description: "Practice paper trading risk-free with live market data feeds and competitive leaderboards.",
     url: "https://stockbazaar.vercel.app",
-    siteName: "Stockbazaar",
+    siteName: "Bull Run",
     locale: "en_IN",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stockbazaar | Stock Market Sandbox Arena",
+    title: "Bull Run | Stock Market Sandbox Arena",
     description: "Practice paper trading risk-free with live market data feeds.",
   },
   robots: {
@@ -75,7 +75,7 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
-  // THE GOOGLE VERIFICATION CODE LINE AT THE VERY END
+  // GOOGLE VERIFICATION CODE
   verification: {
     google: 'VQoGNl67LtYaYB-yOhc8N_G1pyNl7cUr2M-20CRQXtU',
   },
@@ -87,7 +87,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#f5f7ff]">
+      <body className="min-h-full flex flex-col bg-black text-slate-100 antialiased selection:bg-[#7a0000] selection:text-white">
         {children}
       </body>
     </html>
