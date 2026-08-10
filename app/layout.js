@@ -47,14 +47,14 @@ export const metadata = {
     "share market learning app free"
   ],
   authors: [{ name: "Vikrant Chipkar" }],
-  metadataBase: new URL("https://stockbazaar.vercel.app"),
+  metadataBase: new URL("https://bullrun-arena.vercel.app"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "Bull Run | Classroom Stock Market Sandbox Arena",
     description: "Practice paper trading risk-free with live market data feeds and competitive leaderboards.",
-    url: "https://stockbazaar.vercel.app",
+    url: "https://bullrun-arena.vercel.app",
     siteName: "Bull Run",
     locale: "en_IN",
     type: "website",
