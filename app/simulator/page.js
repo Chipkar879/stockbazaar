@@ -3,31 +3,29 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 
-// TOP 20 SENSEX HEAVYWEIGHTS REGISTRY
+// TOP 20 SENSEX HEAVYWEIGHTS REGISTRY WITH EXACT TRADINGVIEW SYMBOLS
 const STATIC_COMPANY_REGISTRY = [
-  { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', yahoo: 'RELIANCE.NS', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
-  { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', yahoo: 'TCS.NS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
-  { sym: 'INFY', name: 'Infosys Ltd.', tv: 'BSE:INFY', yahoo: 'INFY.NS', sector: 'Information Technology', cap: '₹4.3L Cr', pe: 14.7, eps: 71.4, div: '4.55%' },
-  { sym: 'HDFCBANK', name: 'HDFC Bank Ltd.', tv: 'BSE:HDFCBANK', yahoo: 'HDFCBANK.NS', sector: 'Banking & Finance', cap: '₹5.9L Cr', pe: 15.8, eps: 49.2, div: '1.66%' },
-  { sym: 'BAJFINANCE', name: 'Bajaj Finance Ltd.', tv: 'BSE:BAJFINANCE', yahoo: 'BAJFINANCE.NS', sector: 'NBFC', cap: '₹3.9L Cr', pe: 26.4, eps: 210.5, div: '0.35%' },
-  { sym: 'WIPRO', name: 'Wipro Ltd.', tv: 'BSE:WIPRO', yahoo: 'WIPRO.NS', sector: 'Information Technology', cap: '₹2.1L Cr', pe: 20.1, eps: 18.5, div: '0.25%' },
-  { sym: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', tv: 'BSE:SUNPHARMA', yahoo: 'SUNPHARMA.NS', sector: 'Pharmaceuticals', cap: '₹3.6L Cr', pe: 34.2, eps: 41.0, div: '0.80%' },
-  { sym: 'ICICIBANK', name: 'ICICI Bank Ltd.', tv: 'BSE:ICICIBANK', yahoo: 'ICICIBANK.NS', sector: 'Banking & Finance', cap: '₹7.8L Cr', pe: 16.1, eps: 68.2, div: '0.85%' },
-  { sym: 'ASIANPAINT', name: 'Asian Paints Ltd.', tv: 'BSE:ASIANPAINT', yahoo: 'ASIANPAINT.NS', sector: 'Consumer Goods', cap: '₹2.1L Cr', pe: 48.2, eps: 44.1, div: '1.20%' },
-  { sym: 'TATAMOTORS', name: 'Tata Motors Ltd.', tv: 'BSE:TATAMOTORS', yahoo: 'TATAMOTORS.NS', sector: 'Automobiles', cap: '₹2.4L Cr', pe: 8.5, eps: 78.4, div: '0.00%' },
-  { sym: 'ITC', name: 'ITC Ltd.', tv: 'BSE:ITC', yahoo: 'ITC.NS', sector: 'FMCG', cap: '₹5.8L Cr', pe: 28.5, eps: 16.2, div: '3.10%' },
-  { sym: 'LT', name: 'Larsen & Toubro Ltd.', tv: 'BSE:LT', yahoo: 'LT.NS', sector: 'Engineering', cap: '₹4.9L Cr', pe: 31.2, eps: 92.0, div: '0.80%' },
-  { sym: 'AXISBANK', name: 'Axis Bank Ltd.', tv: 'BSE:AXISBANK', yahoo: 'AXISBANK.NS', sector: 'Banking & Finance', cap: '₹3.5L Cr', pe: 13.2, eps: 81.5, div: '0.10%' },
-  { sym: 'KOTAKBANK', name: 'Kotak Mahindra Bank', tv: 'BSE:KOTAKBANK', yahoo: 'KOTAKBANK.NS', sector: 'Banking & Finance', cap: '₹3.4L Cr', pe: 22.1, eps: 72.8, div: '0.11%' },
-  { sym: 'SBIN', name: 'State Bank of India', tv: 'BSE:SBIN', yahoo: 'SBIN.NS', sector: 'Banking & Finance', cap: '₹7.2L Cr', pe: 10.5, eps: 72.0, div: '1.70%' },
-  { sym: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', tv: 'BSE:BHARTIARTL', yahoo: 'BHARTIARTL.NS', sector: 'Telecommunications', cap: '₹8.1L Cr', pe: 54.0, eps: 24.1, div: '0.60%' },
-  { sym: 'HINDUNILVR', name: 'Hindustan Unilever', tv: 'BSE:HINDUNILVR', yahoo: 'HINDUNILVR.NS', sector: 'FMCG', cap: '₹5.9L Cr', pe: 58.2, eps: 43.1, div: '1.60%' },
-  { sym: 'MM', name: 'Mahindra & Mahindra', tv: 'BSE:M_M', yahoo: 'M&M.NS', sector: 'Automobiles', cap: '₹3.2L Cr', pe: 28.1, eps: 98.4, div: '0.70%' },
-  { sym: 'MARUTI', name: 'Maruti Suzuki India', tv: 'BSE:MARUTI', yahoo: 'MARUTI.NS', sector: 'Automobiles', cap: '₹3.8L Cr', pe: 28.4, eps: 412.0, div: '1.00%' },
-  { sym: 'NTPC', name: 'NTPC Ltd.', tv: 'BSE:NTPC', yahoo: 'NTPC.NS', sector: 'Utilities', cap: '₹3.7L Cr', pe: 18.2, eps: 21.0, div: '2.10%' }
+  { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
+  { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
+  { sym: 'INFY', name: 'Infosys Ltd.', tv: 'BSE:INFY', sector: 'Information Technology', cap: '₹4.3L Cr', pe: 14.7, eps: 71.4, div: '4.55%' },
+  { sym: 'HDFCBANK', name: 'HDFC Bank Ltd.', tv: 'BSE:HDFCBANK', sector: 'Banking & Finance', cap: '₹5.9L Cr', pe: 15.8, eps: 49.2, div: '1.66%' },
+  { sym: 'BAJFINANCE', name: 'Bajaj Finance Ltd.', tv: 'BSE:BAJFINANCE', sector: 'NBFC', cap: '₹3.9L Cr', pe: 26.4, eps: 210.5, div: '0.35%' },
+  { sym: 'WIPRO', name: 'Wipro Ltd.', tv: 'BSE:WIPRO', sector: 'Information Technology', cap: '₹2.1L Cr', pe: 20.1, eps: 18.5, div: '0.25%' },
+  { sym: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', tv: 'BSE:SUNPHARMA', sector: 'Pharmaceuticals', cap: '₹3.6L Cr', pe: 34.2, eps: 41.0, div: '0.80%' },
+  { sym: 'ICICIBANK', name: 'ICICI Bank Ltd.', tv: 'BSE:ICICIBANK', sector: 'Banking & Finance', cap: '₹7.8L Cr', pe: 16.1, eps: 68.2, div: '0.85%' },
+  { sym: 'ASIANPAINT', name: 'Asian Paints Ltd.', tv: 'BSE:ASIANPAINT', sector: 'Consumer Goods', cap: '₹2.1L Cr', pe: 48.2, eps: 44.1, div: '1.20%' },
+  { sym: 'TATAMOTORS', name: 'Tata Motors Ltd.', tv: 'BSE:TATAMOTORS', sector: 'Automobiles', cap: '₹2.4L Cr', pe: 8.5, eps: 78.4, div: '0.00%' },
+  { sym: 'ITC', name: 'ITC Ltd.', tv: 'BSE:ITC', sector: 'FMCG', cap: '₹5.8L Cr', pe: 28.5, eps: 16.2, div: '3.10%' },
+  { sym: 'LT', name: 'Larsen & Toubro Ltd.', tv: 'BSE:LT', sector: 'Engineering', cap: '₹4.9L Cr', pe: 31.2, eps: 92.0, div: '0.80%' },
+  { sym: 'AXISBANK', name: 'Axis Bank Ltd.', tv: 'BSE:AXISBANK', sector: 'Banking & Finance', cap: '₹3.5L Cr', pe: 13.2, eps: 81.5, div: '0.10%' },
+  { sym: 'KOTAKBANK', name: 'Kotak Mahindra Bank', tv: 'BSE:KOTAKBANK', sector: 'Banking & Finance', cap: '₹3.4L Cr', pe: 22.1, eps: 72.8, div: '0.11%' },
+  { sym: 'SBIN', name: 'State Bank of India', tv: 'BSE:SBIN', sector: 'Banking & Finance', cap: '₹7.2L Cr', pe: 10.5, eps: 72.0, div: '1.70%' },
+  { sym: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', tv: 'BSE:BHARTIARTL', sector: 'Telecommunications', cap: '₹8.1L Cr', pe: 54.0, eps: 24.1, div: '0.60%' },
+  { sym: 'HINDUNILVR', name: 'Hindustan Unilever', tv: 'BSE:HINDUNILVR', sector: 'FMCG', cap: '₹5.9L Cr', pe: 58.2, eps: 43.1, div: '1.60%' },
+  { sym: 'MM', name: 'Mahindra & Mahindra', tv: 'BSE:M_M', sector: 'Automobiles', cap: '₹3.2L Cr', pe: 28.1, eps: 98.4, div: '0.70%' },
+  { sym: 'MARUTI', name: 'Maruti Suzuki India', tv: 'BSE:MARUTI', sector: 'Automobiles', cap: '₹3.8L Cr', pe: 28.4, eps: 412.0, div: '1.00%' },
+  { sym: 'NTPC', name: 'NTPC Ltd.', tv: 'BSE:NTPC', sector: 'Utilities', cap: '₹3.7L Cr', pe: 18.2, eps: 21.0, div: '2.10%' }
 ];
-
-const UNIFIED_SYMBOLS_QUERY = STATIC_COMPANY_REGISTRY.map(s => s.yahoo).join(',');
 
 const CHALLENGE_EVENTS_REGISTRY = [
   { msg: 'Tech sector crash! TECH -20%', sym: 'TECH', pct: -0.20, col: 'text-rose-400 bg-rose-950/40 border-rose-900/60' },
@@ -51,33 +49,12 @@ export default function CombinedSimulator() {
   const [isChartSyncing, setIsChartSyncing] = useState(false);
   const [marketStatusMessage, setMarketStatusMessage] = useState('');
 
-  // Real-time prices dictionary initialized with current realistic baseline figures
-  const [realStocks, setRealStocks] = useState([
-    { sym: 'RELIANCE', price: 1321.20, changePct: '-0.36%' },
-    { sym: 'TCS', price: 3915.20, changePct: '-0.32%' },
-    { sym: 'INFY', price: 1840.50, changePct: '+0.70%' },
-    { sym: 'HDFCBANK', price: 1720.50, changePct: '-0.15%' },
-    { sym: 'BAJFINANCE', price: 6950.00, changePct: '+1.05%' },
-    { sym: 'WIPRO', price: 410.00, changePct: '+0.45%' },
-    { sym: 'SUNPHARMA', price: 1710.00, changePct: '+0.60%' },
-    { sym: 'ICICIBANK', price: 1245.80, changePct: '-0.25%' },
-    { sym: 'ASIANPAINT', price: 2280.00, changePct: '-0.85%' },
-    { sym: 'TATAMOTORS', price: 985.40, changePct: '+2.12%' },
-    { sym: 'ITC', price: 485.20, changePct: '+0.30%' },
-    { sym: 'LT', price: 3610.00, changePct: '+0.50%' },
-    { sym: 'AXISBANK', price: 1180.40, changePct: '-0.10%' },
-    { sym: 'KOTAKBANK', price: 1790.60, changePct: '+0.20%' },
-    { sym: 'SBIN', price: 812.30, changePct: '+1.10%' },
-    { sym: 'BHARTIARTL', price: 1490.00, changePct: '+0.80%' },
-    { sym: 'HINDUNILVR', price: 2680.00, changePct: '-0.40%' },
-    { sym: 'MM', price: 2890.00, changePct: '+1.50%' },
-    { sym: 'MARUTI', price: 12400.00, changePct: '+0.90%' },
-    { sym: 'NTPC', price: 410.50, changePct: '+0.40%' }
-  ]); 
+  // Stores prices fetched directly from TradingView Scanner API
+  const [tvPrices, setTvPrices] = useState({});
 
   const chartContainerRef = useRef(null);
 
-  // Sync Supabase user session & profile wallet
+  // Sync user session and balance from Supabase
   useEffect(() => {
     const syncUserSession = async () => {
       try {
@@ -107,67 +84,68 @@ export default function CombinedSimulator() {
     syncUserSession();
   }, []);
 
-  // Fetch Direct Yahoo Finance Live Price for ALL Stock Symbols
-  const fetchLiveStockQuoteDirectly = useCallback(async (sym) => {
-    const regItem = STATIC_COMPANY_REGISTRY.find(x => x.sym === sym);
-    if (!regItem) return;
-
+  // Fetch prices directly from TradingView's India Scan Endpoint
+  const fetchTradingViewPrices = useCallback(async () => {
     try {
-      const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${regItem.yahoo}?interval=1m&range=1d`);
-      if (!response.ok) return;
+      const tickers = STATIC_COMPANY_REGISTRY.map(s => s.tv);
+      const response = await fetch('https://scanner.tradingview.com/india/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbols: { tickers },
+          columns: ['close', 'change']
+        })
+      });
 
-      const data = await response.json();
-      const meta = data.chart?.result?.[0]?.meta;
+      if (response.ok) {
+        const json = await response.json();
+        const dataRows = json.data || [];
+        const updatedPrices = {};
 
-      if (meta && meta.regularMarketPrice) {
-        const livePrice = Number(meta.regularMarketPrice.toFixed(2));
-        const prevClose = meta.chartPreviousClose || livePrice;
-        const diff = livePrice - prevClose;
-        const pct = ((diff / prevClose) * 100).toFixed(2);
+        dataRows.forEach(item => {
+          const tvSymbol = item.s;
+          const closePrice = item.d?.[0];
+          const changePct = item.d?.[1];
 
-        setRealStocks(prev => prev.map(st => {
-          if (st.sym === sym) {
-            return {
-              ...st,
-              price: livePrice,
-              changePct: `${diff >= 0 ? '+' : ''}${pct}%`
+          const match = STATIC_COMPANY_REGISTRY.find(s => s.tv === tvSymbol);
+          if (match && closePrice !== undefined) {
+            const formattedPct = changePct !== undefined 
+              ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` 
+              : '0.00%';
+              
+            updatedPrices[match.sym] = {
+              price: parseFloat(closePrice.toFixed(2)),
+              changePct: formattedPct
             };
           }
-          return st;
-        }));
+        });
+
+        if (Object.keys(updatedPrices).length > 0) {
+          setTvPrices(prev => ({ ...prev, ...updatedPrices }));
+        }
       }
     } catch (err) {
-      // Quiet failover without modifying or drifting existing price
+      console.warn("TradingView price stream fetch failed:", err);
     }
   }, []);
 
-  // Sync live quote for active selected stock immediately & every 5 seconds
+  // Poll TradingView scanner every 4 seconds
   useEffect(() => {
     if (activeTab !== 'real') return;
 
-    // Fetch active stock immediately
-    fetchLiveStockQuoteDirectly(selectedRealStock);
-
-    // Fetch all 20 stocks in background
-    STATIC_COMPANY_REGISTRY.forEach(item => {
-      fetchLiveStockQuoteDirectly(item.sym);
-    });
-
-    const interval = setInterval(() => {
-      fetchLiveStockQuoteDirectly(selectedRealStock);
-    }, 5000);
-
+    fetchTradingViewPrices();
+    const interval = setInterval(fetchTradingViewPrices, 4000);
     return () => clearInterval(interval);
-  }, [activeTab, selectedRealStock, fetchLiveStockQuoteDirectly]);
+  }, [activeTab, fetchTradingViewPrices]);
 
-  // Active Context Binding
+  // Bind active company metrics
   const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
-  const activeStatePriceObj = realStocks.find(x => x.sym === selectedRealStock) || realStocks[0];
-  
+  const activeTvQuote = tvPrices[selectedRealStock] || { price: 0, changePct: 'Syncing TV...' };
+
   const mergedActiveRealStock = {
     ...activeStaticContext,
-    price: activeStatePriceObj.price,
-    changePct: activeStatePriceObj.changePct
+    price: activeTvQuote.price || 0,
+    changePct: activeTvQuote.changePct
   };
 
   const verifyMarketIsActive = () => {
@@ -187,7 +165,7 @@ export default function CombinedSimulator() {
     return absoluteMinutes >= sessionOpenMinutes && absoluteMinutes <= sessionCloseMinutes;
   };
 
-  // Embed TradingView Widget for active stock symbol
+  // Embedded TradingView Interactive Chart Element
   useEffect(() => {
     if (activeTab !== 'real' || !chartContainerRef.current) return;
 
@@ -244,8 +222,8 @@ export default function CombinedSimulator() {
 
   const getRealHoldingsValue = () => {
     return Object.values(realHoldings).reduce((sum, h) => {
-      const match = realStocks.find(x => x.sym === h.sym);
-      return sum + (match ? match.price * h.shares : 0);
+      const matchPrice = tvPrices[h.sym]?.price || h.avgPrice;
+      return sum + (matchPrice * h.shares);
     }, 0);
   };
 
@@ -259,10 +237,13 @@ export default function CombinedSimulator() {
     const qty = parseInt(realQtyInput);
     if (isNaN(qty) || qty <= 0) return;
 
-    const targetStock = realStocks.find(s => s.sym === sym);
-    if (!targetStock) return;
+    const livePrice = tvPrices[sym]?.price || mergedActiveRealStock.price;
+    if (!livePrice || livePrice <= 0) {
+      alert("Fetching live TradingView price feed... Please try again in a moment.");
+      return;
+    }
 
-    const transactionTotal = targetStock.price * qty;
+    const transactionTotal = livePrice * qty;
 
     if (type === 'BUY') {
       if (realBalance < transactionTotal) {
@@ -277,15 +258,14 @@ export default function CombinedSimulator() {
       const existing = updatedHoldings[sym];
       if (existing) {
         const newShares = existing.shares + qty;
-        const newAvg = ((existing.avgPrice * existing.shares) + (targetStock.price * qty)) / newShares;
+        const newAvg = ((existing.avgPrice * existing.shares) + (livePrice * qty)) / newShares;
         updatedHoldings[sym] = { sym, shares: newShares, avgPrice: newAvg };
       } else {
-        updatedHoldings[sym] = { sym, shares: qty, avgPrice: targetStock.price };
+        updatedHoldings[sym] = { sym, shares: qty, avgPrice: livePrice };
       }
 
       setRealHoldings(updatedHoldings);
 
-      // Save to Supabase and LocalStorage
       if (user) {
         localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
         await supabase
@@ -313,7 +293,6 @@ export default function CombinedSimulator() {
 
       setRealHoldings(updatedHoldings);
 
-      // Save updated wallet and holdings directly to Supabase
       if (user) {
         localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
         await supabase
@@ -479,7 +458,7 @@ export default function CombinedSimulator() {
     <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-[112px] pb-16">
       <Navbar />
 
-      {/* FIXED SELECTOR TAB BAR */}
+      {/* TAB NAVIGATION HEADER */}
       <div className="fixed top-16 left-0 right-0 h-12 z-40 bg-[#0f0505] border-b border-[#2b0808] shadow-xl">
         <div className="max-w-[1240px] mx-auto px-4 h-full flex items-center gap-6">
           <button 
@@ -497,7 +476,7 @@ export default function CombinedSimulator() {
         </div>
       </div>
 
-      {/* MAIN CONTENT CONTAINER */}
+      {/* MAIN CONTAINER */}
       <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
 
         {/* ── INTERFACE PANEL A: REAL SIMULATOR MODE ── */}
@@ -506,10 +485,10 @@ export default function CombinedSimulator() {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">Sensex Blue-Chip Portfolio Simulator</h1>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Live tickers via internal proxy networks (.NS indices) • Wallet Balance synced with Supabase</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Prices synced directly with TradingView BSE Exchange Data</p>
               </div>
               <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm w-fit">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> NSE / BSE Market Session Sync
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> TradingView Direct Feed
               </div>
             </div>
 
@@ -544,29 +523,31 @@ export default function CombinedSimulator() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* STOCKS MATRIX WATCHLIST */}
+              {/* WATCHLIST */}
               <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl h-fit">
                 <div className="p-4 bg-[#1a0808] border-b border-[#2b0808] font-black text-xs uppercase tracking-wider text-slate-300">
                   Top 20 Sensex Watchlist
                 </div>
                 <div className="divide-y divide-[#2b0808] max-h-[500px] overflow-y-auto">
-                  {realStocks.map(st => {
-                    const registryInfo = STATIC_COMPANY_REGISTRY.find(r => r.sym === st.sym) || {};
-                    const hold = realHoldings[st.sym];
+                  {STATIC_COMPANY_REGISTRY.map(s => {
+                    const priceObj = tvPrices[s.sym] || { price: 0, changePct: 'Syncing...' };
+                    const hold = realHoldings[s.sym];
                     return (
                       <button 
-                        key={st.sym}
-                        onClick={() => setSelectedRealStock(st.sym)}
-                        className={`w-full p-3.5 text-left flex justify-between items-center transition-colors hover:bg-[#1a0808] ${selectedRealStock === st.sym ? 'bg-[#1a0808] border-l-4 border-l-[#ff3333]' : ''}`}
+                        key={s.sym}
+                        onClick={() => setSelectedRealStock(s.sym)}
+                        className={`w-full p-3.5 text-left flex justify-between items-center transition-colors hover:bg-[#1a0808] ${selectedRealStock === s.sym ? 'bg-[#1a0808] border-l-4 border-l-[#ff3333]' : ''}`}
                       >
                         <div>
-                          <div className="font-black text-sm text-white">{st.sym}</div>
-                          <div className="text-[11px] text-slate-400 font-medium max-w-[140px] truncate">{registryInfo.name || st.sym}</div>
+                          <div className="font-black text-sm text-white">{s.sym}</div>
+                          <div className="text-[11px] text-slate-400 font-medium max-w-[140px] truncate">{s.name}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-mono font-bold text-xs text-white">₹{st.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                          <div className={`text-[11px] font-bold ${st.changePct.startsWith('-') ? 'text-rose-500' : 'text-emerald-400'}`}>
-                            {st.changePct}
+                          <div className="font-mono font-bold text-xs text-white">
+                            {priceObj.price > 0 ? `₹${priceObj.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Syncing TV...'}
+                          </div>
+                          <div className={`text-[11px] font-bold ${priceObj.changePct.startsWith('-') ? 'text-rose-500' : 'text-emerald-400'}`}>
+                            {priceObj.changePct}
                           </div>
                           {hold && <div className="text-[10px] text-[#ff3333] font-black mt-0.5">{hold.shares} Shares</div>}
                         </div>
@@ -587,7 +568,9 @@ export default function CombinedSimulator() {
                       </span>
                       <h2 className="text-xl font-black text-white mt-2.5">{mergedActiveRealStock.name}</h2>
                       <div className="text-2xl font-black font-mono text-white mt-1">
-                        ₹{mergedActiveRealStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {mergedActiveRealStock.price > 0 
+                          ? `₹${mergedActiveRealStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` 
+                          : 'Syncing Price...'}
                       </div>
                     </div>
 
@@ -639,7 +622,7 @@ export default function CombinedSimulator() {
                   </div>
                 </div>
 
-                {/* ADVANCED TRADINGVIEW CORE ENGINE PLATFORM CONTAINER */}
+                {/* TRADINGVIEW CONTAINER */}
                 <div className="bg-[#000000] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl relative h-[420px] w-full">
                   {isChartSyncing && (
                     <div className="absolute inset-0 bg-black/80 z-20 flex items-center justify-center text-xs font-bold text-[#ff3333] animate-pulse">
@@ -764,7 +747,7 @@ export default function CombinedSimulator() {
                 })}
               </div>
 
-              {/* ARENA RUNTIME SCORE BOARD STANDINGS */}
+              {/* ARENA LEADERBOARD STANDINGS */}
               <div className="space-y-4">
                 <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl space-y-4">
                   <h3 className="font-black text-xs uppercase tracking-wider text-slate-400 border-b border-[#2b0808] pb-2">Arena Leaderboard</h3>
