@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
+import { supabase } from '@/lib/supabase';
 
-// Static company registry configuration
+// TOP 20 SENSEX HEAVYWEIGHTS REGISTRY
 const STATIC_COMPANY_REGISTRY = [
   { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', yahoo: 'RELIANCE.NS', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
   { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', yahoo: 'TCS.NS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
@@ -13,7 +14,17 @@ const STATIC_COMPANY_REGISTRY = [
   { sym: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', tv: 'BSE:SUNPHARMA', yahoo: 'SUNPHARMA.NS', sector: 'Pharmaceuticals', cap: '₹3.6L Cr', pe: 34.2, eps: 41.0, div: '0.80%' },
   { sym: 'ICICIBANK', name: 'ICICI Bank Ltd.', tv: 'BSE:ICICIBANK', yahoo: 'ICICIBANK.NS', sector: 'Banking & Finance', cap: '₹7.8L Cr', pe: 16.1, eps: 68.2, div: '0.85%' },
   { sym: 'ASIANPAINT', name: 'Asian Paints Ltd.', tv: 'BSE:ASIANPAINT', yahoo: 'ASIANPAINT.NS', sector: 'Consumer Goods', cap: '₹2.1L Cr', pe: 48.2, eps: 44.1, div: '1.20%' },
-  { sym: 'TATAMOTORS', name: 'Tata Motors Ltd.', tv: 'BSE:TATAMOTORS', yahoo: 'TATAMOTORS.NS', sector: 'Automobiles', cap: '₹2.4L Cr', pe: 8.5, eps: 78.4, div: '0.00%' }
+  { sym: 'TATAMOTORS', name: 'Tata Motors Ltd.', tv: 'BSE:TATAMOTORS', yahoo: 'TATAMOTORS.NS', sector: 'Automobiles', cap: '₹2.4L Cr', pe: 8.5, eps: 78.4, div: '0.00%' },
+  { sym: 'ITC', name: 'ITC Ltd.', tv: 'BSE:ITC', yahoo: 'ITC.NS', sector: 'FMCG', cap: '₹5.8L Cr', pe: 28.5, eps: 16.2, div: '3.10%' },
+  { sym: 'LT', name: 'Larsen & Toubro Ltd.', tv: 'BSE:LT', yahoo: 'LT.NS', sector: 'Engineering', cap: '₹4.9L Cr', pe: 31.2, eps: 92.0, div: '0.80%' },
+  { sym: 'AXISBANK', name: 'Axis Bank Ltd.', tv: 'BSE:AXISBANK', yahoo: 'AXISBANK.NS', sector: 'Banking & Finance', cap: '₹3.5L Cr', pe: 13.2, eps: 81.5, div: '0.10%' },
+  { sym: 'KOTAKBANK', name: 'Kotak Mahindra Bank', tv: 'BSE:KOTAKBANK', yahoo: 'KOTAKBANK.NS', sector: 'Banking & Finance', cap: '₹3.4L Cr', pe: 22.1, eps: 72.8, div: '0.11%' },
+  { sym: 'SBIN', name: 'State Bank of India', tv: 'BSE:SBIN', yahoo: 'SBIN.NS', sector: 'Banking & Finance', cap: '₹7.2L Cr', pe: 10.5, eps: 72.0, div: '1.70%' },
+  { sym: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', tv: 'BSE:BHARTIARTL', yahoo: 'BHARTIARTL.NS', sector: 'Telecommunications', cap: '₹8.1L Cr', pe: 54.0, eps: 24.1, div: '0.60%' },
+  { sym: 'HINDUNILVR', name: 'Hindustan Unilever', tv: 'BSE:HINDUNILVR', yahoo: 'HINDUNILVR.NS', sector: 'FMCG', cap: '₹5.9L Cr', pe: 58.2, eps: 43.1, div: '1.60%' },
+  { sym: 'MM', name: 'Mahindra & Mahindra', tv: 'BSE:M_M', yahoo: 'M&M.NS', sector: 'Automobiles', cap: '₹3.2L Cr', pe: 28.1, eps: 98.4, div: '0.70%' },
+  { sym: 'MARUTI', name: 'Maruti Suzuki India', tv: 'BSE:MARUTI', yahoo: 'MARUTI.NS', sector: 'Automobiles', cap: '₹3.8L Cr', pe: 28.4, eps: 412.0, div: '1.00%' },
+  { sym: 'NTPC', name: 'NTPC Ltd.', tv: 'BSE:NTPC', yahoo: 'NTPC.NS', sector: 'Utilities', cap: '₹3.7L Cr', pe: 18.2, eps: 21.0, div: '2.10%' }
 ];
 
 const UNIFIED_SYMBOLS_QUERY = STATIC_COMPANY_REGISTRY.map(s => s.yahoo).join(',');
@@ -27,6 +38,7 @@ const CHALLENGE_EVENTS_REGISTRY = [
 
 export default function CombinedSimulator() {
   const [activeTab, setActiveTab] = useState('real'); 
+  const [user, setUser] = useState(null);
 
   // =========================================================================
   // ── 1. REAL PORTFOLIO SIMULATOR STATE ────────────────────────────────────
@@ -41,18 +53,58 @@ export default function CombinedSimulator() {
 
   const [realStocks, setRealStocks] = useState([
     { sym: 'RELIANCE', price: 1309.35, changePct: '+0.15%' },
-    { sym: 'TCS', price: 2199.00, changePct: '-0.32%' },
-    { sym: 'INFY', price: 1143.60, changePct: '+0.70%' },
-    { sym: 'HDFCBANK', price: 779.80, changePct: '-0.15%' },
-    { sym: 'BAJFINANCE', price: 6350.00, changePct: '+1.05%' },
+    { sym: 'TCS', price: 3915.20, changePct: '-0.32%' },
+    { sym: 'INFY', price: 1840.50, changePct: '+0.70%' },
+    { sym: 'HDFCBANK', price: 1720.50, changePct: '-0.15%' },
+    { sym: 'BAJFINANCE', price: 6950.00, changePct: '+1.05%' },
     { sym: 'WIPRO', price: 410.00, changePct: '+0.45%' },
-    { sym: 'SUNPHARMA', price: 1540.00, changePct: '+0.60%' },
-    { sym: 'ICICIBANK', price: 1120.00, changePct: '-0.25%' },
+    { sym: 'SUNPHARMA', price: 1710.00, changePct: '+0.60%' },
+    { sym: 'ICICIBANK', price: 1245.80, changePct: '-0.25%' },
     { sym: 'ASIANPAINT', price: 2280.00, changePct: '-0.85%' },
-    { sym: 'TATAMOTORS', price: 715.00, changePct: '+2.12%' }
+    { sym: 'TATAMOTORS', price: 985.40, changePct: '+2.12%' },
+    { sym: 'ITC', price: 485.20, changePct: '+0.30%' },
+    { sym: 'LT', price: 3610.00, changePct: '+0.50%' },
+    { sym: 'AXISBANK', price: 1180.40, changePct: '-0.10%' },
+    { sym: 'KOTAKBANK', price: 1790.60, changePct: '+0.20%' },
+    { sym: 'SBIN', price: 812.30, changePct: '+1.10%' },
+    { sym: 'BHARTIARTL', price: 1490.00, changePct: '+0.80%' },
+    { sym: 'HINDUNILVR', price: 2680.00, changePct: '-0.40%' },
+    { sym: 'MM', price: 2890.00, changePct: '+1.50%' },
+    { sym: 'MARUTI', price: 12400.00, changePct: '+0.90%' },
+    { sym: 'NTPC', price: 410.50, changePct: '+0.40%' }
   ]); 
 
   const chartContainerRef = useRef(null);
+
+  // Sync Supabase session & fetch persistent user wallet
+  useEffect(() => {
+    const syncUserSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('wallet_balance')
+            .eq('id', session.user.id)
+            .single();
+
+          if (prof && prof.wallet_balance !== undefined && prof.wallet_balance !== null) {
+            setRealBalance(prof.wallet_balance);
+          }
+
+          const savedHoldings = localStorage.getItem(`bullrun_holdings_${session.user.id}`);
+          if (savedHoldings) {
+            setRealHoldings(JSON.parse(savedHoldings));
+          }
+        }
+      } catch (err) {
+        console.error("Supabase user sync fault:", err);
+      }
+    };
+
+    syncUserSession();
+  }, []);
 
   const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
   const activeStatePriceObj = realStocks.find(x => x.sym === selectedRealStock) || realStocks[0];
@@ -187,7 +239,7 @@ export default function CombinedSimulator() {
     }, 0);
   };
 
-  const handleRealTrade = (sym, type) => {
+  const handleRealTrade = async (sym, type) => {
     if (!verifyMarketIsActive()) {
       setMarketStatusMessage("🚨 Order Rejected: Indian Stock Exchanges (NSE/BSE) are currently closed. Live trading is only permitted Monday to Friday, 9:15 AM – 3:30 PM IST.");
       setTimeout(() => setMarketStatusMessage(''), 8000);
@@ -207,32 +259,58 @@ export default function CombinedSimulator() {
         alert('Insufficient funds in Real Simulator account!');
         return;
       }
-      setRealBalance(p => p - transactionTotal);
-      setRealHoldings(prev => {
-        const existing = prev[sym];
-        if (existing) {
-          const newShares = existing.shares + qty;
-          const newAvg = ((existing.avgPrice * existing.shares) + (targetStock.price * qty)) / newShares;
-          return { ...prev, [sym]: { sym, shares: newShares, avgPrice: newAvg } };
-        }
-        return { ...prev, [sym]: { sym, shares: qty, avgPrice: targetStock.price } };
-      });
+      
+      const newBalance = Number((realBalance - transactionTotal).toFixed(2));
+      setRealBalance(newBalance);
+
+      const updatedHoldings = { ...realHoldings };
+      const existing = updatedHoldings[sym];
+      if (existing) {
+        const newShares = existing.shares + qty;
+        const newAvg = ((existing.avgPrice * existing.shares) + (targetStock.price * qty)) / newShares;
+        updatedHoldings[sym] = { sym, shares: newShares, avgPrice: newAvg };
+      } else {
+        updatedHoldings[sym] = { sym, shares: qty, avgPrice: targetStock.price };
+      }
+
+      setRealHoldings(updatedHoldings);
+
+      // Save to Supabase and LocalStorage
+      if (user) {
+        localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
+        await supabase
+          .from('profiles')
+          .update({ wallet_balance: newBalance })
+          .eq('id', user.id);
+      }
+
     } else {
       const existing = realHoldings[sym];
       if (!existing || existing.shares < qty) {
         alert('Not enough shares to execute this transaction!');
         return;
       }
-      setRealBalance(p => p + transactionTotal);
-      setRealHoldings(prev => {
-        const currentHold = prev[sym];
-        if (currentHold.shares === qty) {
-          const updated = { ...prev };
-          delete updated[sym];
-          return updated;
-        }
-        return { ...prev, [sym]: { ...currentHold, shares: currentHold.shares - qty } };
-      });
+
+      const newBalance = Number((realBalance + transactionTotal).toFixed(2));
+      setRealBalance(newBalance);
+
+      const updatedHoldings = { ...realHoldings };
+      if (existing.shares === qty) {
+        delete updatedHoldings[sym];
+      } else {
+        updatedHoldings[sym] = { ...existing, shares: existing.shares - qty };
+      }
+
+      setRealHoldings(updatedHoldings);
+
+      // Save updated wallet and holdings directly to Supabase
+      if (user) {
+        localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
+        await supabase
+          .from('profiles')
+          .update({ wallet_balance: newBalance })
+          .eq('id', user.id);
+      }
     }
   };
 
@@ -391,14 +469,14 @@ export default function CombinedSimulator() {
     <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-[112px] pb-16">
       <Navbar />
 
-      {/* FIXED SELECTOR TAB BAR (Positioned at top-16, height 48px, 64px to 112px) */}
+      {/* FIXED SELECTOR TAB BAR */}
       <div className="fixed top-16 left-0 right-0 h-12 z-40 bg-[#0f0505] border-b border-[#2b0808] shadow-xl">
         <div className="max-w-[1240px] mx-auto px-4 h-full flex items-center gap-6">
           <button 
             onClick={() => setActiveTab('real')}
             className={`h-full text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center ${activeTab === 'real' ? 'border-[#ff3333] text-[#ff3333]' : 'border-transparent text-slate-400 hover:text-white'}`}
           >
-            📈 Real Indian Equity Simulator
+            📈 Top 20 Sensex Real Simulator
           </button>
           <button 
             onClick={() => setActiveTab('game')}
@@ -409,7 +487,7 @@ export default function CombinedSimulator() {
         </div>
       </div>
 
-      {/* MAIN CONTENT CONTAINER (pt-4 provides spacing beneath the fixed tab bar) */}
+      {/* MAIN CONTENT CONTAINER */}
       <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
 
         {/* ── INTERFACE PANEL A: REAL SIMULATOR MODE ── */}
@@ -417,8 +495,8 @@ export default function CombinedSimulator() {
           <div className="space-y-6 animate-fadeInFast">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
               <div>
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">Real Equity Portfolio Simulator</h1>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Live streaming tickers via internal proxy networks (.NS indices) • Initial Capital: ₹50,000</p>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">Sensex Blue-Chip Portfolio Simulator</h1>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Live tickers via internal proxy networks (.NS indices) • Wallet Balance synced with Supabase</p>
               </div>
               <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm w-fit">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> NSE / BSE Market Session Sync
@@ -435,7 +513,7 @@ export default function CombinedSimulator() {
             {/* PORTFOLIO METRICS SHEET */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Available Cash</span>
+                <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Available Cash Balance</span>
                 <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(realBalance).toLocaleString('en-IN')}</div>
               </div>
               <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
@@ -444,7 +522,7 @@ export default function CombinedSimulator() {
               </div>
               <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
                 <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Account Net Worth</span>
-                <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(realBalance + getRealHoldingsValue()).toLocaleString('en-IN')}</div>
+                <div className="text-lg font-black mt-1 font-mono text-emerald-400">₹{Math.round(realBalance + getRealHoldingsValue()).toLocaleString('en-IN')}</div>
               </div>
               <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
                 <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Net Margin Return</span>
@@ -459,7 +537,7 @@ export default function CombinedSimulator() {
               {/* STOCKS MATRIX WATCHLIST */}
               <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl h-fit">
                 <div className="p-4 bg-[#1a0808] border-b border-[#2b0808] font-black text-xs uppercase tracking-wider text-slate-300">
-                  NSE Watchlist Matrix
+                  Top 20 Sensex Watchlist
                 </div>
                 <div className="divide-y divide-[#2b0808] max-h-[500px] overflow-y-auto">
                   {realStocks.map(st => {
