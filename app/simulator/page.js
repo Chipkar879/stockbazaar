@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 
@@ -52,7 +52,7 @@ export default function CombinedSimulator() {
   const [marketStatusMessage, setMarketStatusMessage] = useState('');
 
   const [realStocks, setRealStocks] = useState([
-    { sym: 'RELIANCE', price: 1309.35, changePct: '+0.15%' },
+    { sym: 'RELIANCE', price: 1321.20, changePct: '-0.36%' },
     { sym: 'TCS', price: 3915.20, changePct: '-0.32%' },
     { sym: 'INFY', price: 1840.50, changePct: '+0.70%' },
     { sym: 'HDFCBANK', price: 1720.50, changePct: '-0.15%' },
@@ -132,12 +132,48 @@ export default function CombinedSimulator() {
     return absoluteMinutes >= sessionOpenMinutes && absoluteMinutes <= sessionCloseMinutes;
   };
 
+  // Pure Live Fetcher - Direct Real-Time Market Ticks with Zero Artificial Drift
+  const fetchLiveStockQuoteDirectly = useCallback(async (sym) => {
+    const regItem = STATIC_COMPANY_REGISTRY.find(x => x.sym === sym);
+    if (!regItem) return;
+
+    try {
+      const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${regItem.yahoo}?interval=1m&range=1d`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const meta = data.chart?.result?.[0]?.meta;
+
+      if (meta && meta.regularMarketPrice) {
+        const livePrice = Number(meta.regularMarketPrice.toFixed(2));
+        const prevClose = meta.chartPreviousClose || livePrice;
+        const diff = livePrice - prevClose;
+        const pct = ((diff / prevClose) * 100).toFixed(2);
+
+        setRealStocks(prev => prev.map(st => {
+          if (st.sym === sym) {
+            return {
+              ...st,
+              price: livePrice,
+              changePct: `${diff >= 0 ? '+' : ''}${pct}%`
+            };
+          }
+          return st;
+        }));
+      }
+    } catch (err) {
+      // Quiet failover without modifying or drifting existing price
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab !== 'real') return;
 
     async function fetchLiveProxyPrices() {
       try {
         const response = await fetch(`/api/prices?symbols=${encodeURIComponent(UNIFIED_SYMBOLS_QUERY)}`);
+        if (!response.ok) throw new Error("Proxy error");
+
         const json = await response.json();
         const prices = json.prices || {};
 
@@ -158,25 +194,15 @@ export default function CombinedSimulator() {
           return st;
         }));
       } catch (err) {
-        setRealStocks(prevStocks => prevStocks.map(st => {
-          if (st.sym === selectedRealStock) {
-            const drift = (Math.random() * 0.0012) - 0.0006;
-            const updatedPrice = st.price * (1 + drift);
-            return {
-              ...st,
-              price: parseFloat(updatedPrice.toFixed(2)),
-              changePct: `${drift >= 0 ? '+' : ''}${(drift * 100).toFixed(2)}%`
-            };
-          }
-          return st;
-        }));
+        // Fall back to direct Yahoo fetch for active stock without any random drift
+        fetchLiveStockQuoteDirectly(selectedRealStock);
       }
     }
 
     fetchLiveProxyPrices();
-    const syncToken = setInterval(fetchLiveProxyPrices, 10000); 
+    const syncToken = setInterval(fetchLiveProxyPrices, 5000); 
     return () => clearInterval(syncToken);
-  }, [activeTab, selectedRealStock]);
+  }, [activeTab, selectedRealStock, fetchLiveStockQuoteDirectly]);
 
   useEffect(() => {
     if (activeTab !== 'real' || !chartContainerRef.current) return;
