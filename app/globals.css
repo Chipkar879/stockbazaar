@@ -205,3 +205,10 @@ h1, h2, h3, h4, h5, h6 {
 .delay-300 {
   animation-delay: 0.3s;
 }
+
+/* Hide shortcut hotkey hints inside TradingView snapshot/menu popups */
+iframe[id^="tv-view-wrapper"] .shortcut-3Y231xS4,
+.tv-dialog__shortcut,
+[class*="shortcut-"] {
+  display: none !important;
+}
