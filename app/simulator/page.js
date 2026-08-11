@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 
-// TOP 20 SENSEX HEAVYWEIGHTS REGISTRY WITH EXACT TRADINGVIEW SYMBOLS
+// TOP 20 SENSEX HEAVYWEIGHTS REGISTRY (FIXED TATAMOTORS TRADINGVIEW SYMBOL)
 const STATIC_COMPANY_REGISTRY = [
   { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
   { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
@@ -14,7 +14,7 @@ const STATIC_COMPANY_REGISTRY = [
   { sym: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', tv: 'BSE:SUNPHARMA', sector: 'Pharmaceuticals', cap: '₹3.6L Cr', pe: 34.2, eps: 41.0, div: '0.80%' },
   { sym: 'ICICIBANK', name: 'ICICI Bank Ltd.', tv: 'BSE:ICICIBANK', sector: 'Banking & Finance', cap: '₹7.8L Cr', pe: 16.1, eps: 68.2, div: '0.85%' },
   { sym: 'ASIANPAINT', name: 'Asian Paints Ltd.', tv: 'BSE:ASIANPAINT', sector: 'Consumer Goods', cap: '₹2.1L Cr', pe: 48.2, eps: 44.1, div: '1.20%' },
-  { sym: 'TATAMOTORS', name: 'Tata Motors Ltd.', tv: 'BSE:TATAMOTORS', sector: 'Automobiles', cap: '₹2.4L Cr', pe: 8.5, eps: 78.4, div: '0.00%' },
+  { sym: 'TATAMOTORS', name: 'Tata Motors Ltd.', tv: 'NSE:TATAMOTORS', sector: 'Automobiles', cap: '₹2.4L Cr', pe: 8.5, eps: 78.4, div: '0.00%' },
   { sym: 'ITC', name: 'ITC Ltd.', tv: 'BSE:ITC', sector: 'FMCG', cap: '₹5.8L Cr', pe: 28.5, eps: 16.2, div: '3.10%' },
   { sym: 'LT', name: 'Larsen & Toubro Ltd.', tv: 'BSE:LT', sector: 'Engineering', cap: '₹4.9L Cr', pe: 31.2, eps: 92.0, div: '0.80%' },
   { sym: 'AXISBANK', name: 'Axis Bank Ltd.', tv: 'BSE:AXISBANK', sector: 'Banking & Finance', cap: '₹3.5L Cr', pe: 13.2, eps: 81.5, div: '0.10%' },
@@ -38,9 +38,7 @@ export default function CombinedSimulator() {
   const [activeTab, setActiveTab] = useState('real'); 
   const [user, setUser] = useState(null);
 
-  // =========================================================================
-  // ── 1. REAL PORTFOLIO SIMULATOR STATE ────────────────────────────────────
-  // =========================================================================
+  // REAL PORTFOLIO SIMULATOR STATE
   const START_REAL = 50000; 
   const [realBalance, setRealBalance] = useState(START_REAL);
   const [realHoldings, setRealHoldings] = useState({});
@@ -84,7 +82,7 @@ export default function CombinedSimulator() {
     syncUserSession();
   }, []);
 
-  // Fetch prices via internal server proxy (/api/tv-prices) to bypass CORS
+  // Fetch prices via server proxy (/api/tv-prices) to bypass CORS
   const fetchTradingViewPrices = useCallback(async () => {
     try {
       const tickers = STATIC_COMPANY_REGISTRY.map(s => s.tv);
@@ -224,7 +222,7 @@ export default function CombinedSimulator() {
 
   const handleRealTrade = async (sym, type) => {
     if (!verifyMarketIsActive()) {
-      setMarketStatusMessage("🚨 Order Rejected: Indian Stock Exchanges (NSE/BSE) are currently closed. Live trading is only permitted Monday to Friday, 9:15 AM – 3:30 PM IST.");
+      setMarketStatusMessage("🚨 Order Rejected: Indian Stock Exchanges (NSE/BSE) are currently closed. Live trading is permitted Monday to Friday, 9:15 AM – 3:30 PM IST.");
       setTimeout(() => setMarketStatusMessage(''), 8000);
       return;
     }
@@ -480,7 +478,7 @@ export default function CombinedSimulator() {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">Sensex Blue-Chip Portfolio Simulator</h1>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Prices synced directly with TradingView BSE Exchange Data</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Prices synced directly with TradingView BSE/NSE Exchange Data</p>
               </div>
               <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm w-fit">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> TradingView Direct Feed
