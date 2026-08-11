@@ -51,6 +51,7 @@ export default function CombinedSimulator() {
   const [isChartSyncing, setIsChartSyncing] = useState(false);
   const [marketStatusMessage, setMarketStatusMessage] = useState('');
 
+  // Real-time prices dictionary initialized with current realistic baseline figures
   const [realStocks, setRealStocks] = useState([
     { sym: 'RELIANCE', price: 1321.20, changePct: '-0.36%' },
     { sym: 'TCS', price: 3915.20, changePct: '-0.32%' },
@@ -76,7 +77,7 @@ export default function CombinedSimulator() {
 
   const chartContainerRef = useRef(null);
 
-  // Sync Supabase session & fetch persistent user wallet
+  // Sync Supabase user session & profile wallet
   useEffect(() => {
     const syncUserSession = async () => {
       try {
@@ -106,33 +107,7 @@ export default function CombinedSimulator() {
     syncUserSession();
   }, []);
 
-  const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
-  const activeStatePriceObj = realStocks.find(x => x.sym === selectedRealStock) || realStocks[0];
-  
-  const mergedActiveRealStock = {
-    ...activeStaticContext,
-    price: activeStatePriceObj.price,
-    changePct: activeStatePriceObj.changePct
-  };
-
-  const verifyMarketIsActive = () => {
-    const indianTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
-    const istDate = new Date(indianTimeStr);
-    
-    const dayOfWeek = istDate.getDay(); 
-    const currentHour = istDate.getHours();
-    const currentMinute = istDate.getMinutes();
-    
-    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
-    
-    const absoluteMinutes = (currentHour * 60) + currentMinute;
-    const sessionOpenMinutes = (9 * 60) + 15;  
-    const sessionCloseMinutes = (15 * 60) + 30; 
-    
-    return absoluteMinutes >= sessionOpenMinutes && absoluteMinutes <= sessionCloseMinutes;
-  };
-
-  // Pure Live Fetcher - Direct Real-Time Market Ticks with Zero Artificial Drift
+  // Fetch Direct Yahoo Finance Live Price for ALL Stock Symbols
   const fetchLiveStockQuoteDirectly = useCallback(async (sym) => {
     const regItem = STATIC_COMPANY_REGISTRY.find(x => x.sym === sym);
     if (!regItem) return;
@@ -166,44 +141,53 @@ export default function CombinedSimulator() {
     }
   }, []);
 
+  // Sync live quote for active selected stock immediately & every 5 seconds
   useEffect(() => {
     if (activeTab !== 'real') return;
 
-    async function fetchLiveProxyPrices() {
-      try {
-        const response = await fetch(`/api/prices?symbols=${encodeURIComponent(UNIFIED_SYMBOLS_QUERY)}`);
-        if (!response.ok) throw new Error("Proxy error");
+    // Fetch active stock immediately
+    fetchLiveStockQuoteDirectly(selectedRealStock);
 
-        const json = await response.json();
-        const prices = json.prices || {};
+    // Fetch all 20 stocks in background
+    STATIC_COMPANY_REGISTRY.forEach(item => {
+      fetchLiveStockQuoteDirectly(item.sym);
+    });
 
-        setRealStocks(prevStocks => prevStocks.map(st => {
-          const registryMatch = STATIC_COMPANY_REGISTRY.find(r => r.sym === st.sym);
-          const matchData = registryMatch ? prices[registryMatch.yahoo] : null;
-          
-          if (matchData && matchData.price > 0) {
-            const currentPrice = matchData.price;
-            const baseClose = matchData.prevClose || currentPrice;
-            const pct = (((currentPrice - baseClose) / baseClose) * 100).toFixed(2);
-            return {
-              ...st,
-              price: parseFloat(currentPrice.toFixed(2)),
-              changePct: `${currentPrice >= baseClose ? '+' : ''}${pct}%`
-            };
-          }
-          return st;
-        }));
-      } catch (err) {
-        // Fall back to direct Yahoo fetch for active stock without any random drift
-        fetchLiveStockQuoteDirectly(selectedRealStock);
-      }
-    }
+    const interval = setInterval(() => {
+      fetchLiveStockQuoteDirectly(selectedRealStock);
+    }, 5000);
 
-    fetchLiveProxyPrices();
-    const syncToken = setInterval(fetchLiveProxyPrices, 5000); 
-    return () => clearInterval(syncToken);
+    return () => clearInterval(interval);
   }, [activeTab, selectedRealStock, fetchLiveStockQuoteDirectly]);
 
+  // Active Context Binding
+  const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
+  const activeStatePriceObj = realStocks.find(x => x.sym === selectedRealStock) || realStocks[0];
+  
+  const mergedActiveRealStock = {
+    ...activeStaticContext,
+    price: activeStatePriceObj.price,
+    changePct: activeStatePriceObj.changePct
+  };
+
+  const verifyMarketIsActive = () => {
+    const indianTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const istDate = new Date(indianTimeStr);
+    
+    const dayOfWeek = istDate.getDay(); 
+    const currentHour = istDate.getHours();
+    const currentMinute = istDate.getMinutes();
+    
+    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+    
+    const absoluteMinutes = (currentHour * 60) + currentMinute;
+    const sessionOpenMinutes = (9 * 60) + 15;  
+    const sessionCloseMinutes = (15 * 60) + 30; 
+    
+    return absoluteMinutes >= sessionOpenMinutes && absoluteMinutes <= sessionCloseMinutes;
+  };
+
+  // Embed TradingView Widget for active stock symbol
   useEffect(() => {
     if (activeTab !== 'real' || !chartContainerRef.current) return;
 
