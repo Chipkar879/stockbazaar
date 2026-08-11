@@ -49,12 +49,12 @@ export default function CombinedSimulator() {
   const [isChartSyncing, setIsChartSyncing] = useState(false);
   const [marketStatusMessage, setMarketStatusMessage] = useState('');
 
-  // Stores prices fetched directly from TradingView Scanner API
+  // Stores live TradingView scanner prices
   const [tvPrices, setTvPrices] = useState({});
 
   const chartContainerRef = useRef(null);
 
-  // Sync user session and balance from Supabase
+  // Sync user session & profile wallet
   useEffect(() => {
     const syncUserSession = async () => {
       try {
@@ -84,17 +84,14 @@ export default function CombinedSimulator() {
     syncUserSession();
   }, []);
 
-  // Fetch prices directly from TradingView's India Scan Endpoint
+  // Fetch prices via internal server proxy (/api/tv-prices) to bypass CORS
   const fetchTradingViewPrices = useCallback(async () => {
     try {
       const tickers = STATIC_COMPANY_REGISTRY.map(s => s.tv);
-      const response = await fetch('https://scanner.tradingview.com/india/scan', {
+      const response = await fetch('/api/tv-prices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbols: { tickers },
-          columns: ['close', 'change']
-        })
+        body: JSON.stringify({ tickers })
       });
 
       if (response.ok) {
@@ -125,22 +122,22 @@ export default function CombinedSimulator() {
         }
       }
     } catch (err) {
-      console.warn("TradingView price stream fetch failed:", err);
+      console.warn("TradingView price proxy sync error:", err);
     }
   }, []);
 
-  // Poll TradingView scanner every 4 seconds
+  // Poll TradingView scanner via API proxy every 3 seconds
   useEffect(() => {
     if (activeTab !== 'real') return;
 
     fetchTradingViewPrices();
-    const interval = setInterval(fetchTradingViewPrices, 4000);
+    const interval = setInterval(fetchTradingViewPrices, 3000);
     return () => clearInterval(interval);
   }, [activeTab, fetchTradingViewPrices]);
 
-  // Bind active company metrics
+  // Bind active company
   const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
-  const activeTvQuote = tvPrices[selectedRealStock] || { price: 0, changePct: 'Syncing TV...' };
+  const activeTvQuote = tvPrices[selectedRealStock] || { price: 0, changePct: 'Syncing...' };
 
   const mergedActiveRealStock = {
     ...activeStaticContext,
@@ -165,7 +162,7 @@ export default function CombinedSimulator() {
     return absoluteMinutes >= sessionOpenMinutes && absoluteMinutes <= sessionCloseMinutes;
   };
 
-  // Embedded TradingView Interactive Chart Element
+  // Embedded TradingView Interactive Chart
   useEffect(() => {
     if (activeTab !== 'real' || !chartContainerRef.current) return;
 
@@ -211,9 +208,7 @@ export default function CombinedSimulator() {
       scriptTag.src = 'https://s3.tradingview.com/tv.js';
       scriptTag.type = 'text/javascript';
       scriptTag.async = true;
-      scriptTag.onload = () => {
-        setTimeout(initializeAdvancedChart, 200);
-      };
+      scriptTag.onload = () => setTimeout(initializeAdvancedChart, 200);
       document.head.appendChild(scriptTag);
     } else {
       initializeAdvancedChart();
@@ -239,7 +234,7 @@ export default function CombinedSimulator() {
 
     const livePrice = tvPrices[sym]?.price || mergedActiveRealStock.price;
     if (!livePrice || livePrice <= 0) {
-      alert("Fetching live TradingView price feed... Please try again in a moment.");
+      alert("Fetching live TradingView price feed... Please try again in a second.");
       return;
     }
 
