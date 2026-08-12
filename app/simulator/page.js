@@ -1,37 +1,48 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 
-// MULTI-ASSET REGISTRY: SENSEX BLUE-CHIPS + GOLD + SILVER + CRYPTO (INR)
+// JUMBLED MULTI-ASSET REGISTRY WITH CATEGORIZED SECTORS
 const STATIC_COMPANY_REGISTRY = [
-  // COMMODITIES & CRYPTO
-  { sym: 'GOLD', name: 'Gold (10g / MCX Spot)', tv: 'MCX:GOLD1!', sector: 'Commodities / Gold', cap: 'Global Asset', pe: 'N/A', eps: 'N/A', div: '0.00%' },
-  { sym: 'SILVER', name: 'Silver (1kg / MCX Spot)', tv: 'MCX:SILVER1!', sector: 'Commodities / Silver', cap: 'Global Asset', pe: 'N/A', eps: 'N/A', div: '0.00%' },
-  { sym: 'BTC', name: 'Bitcoin (BTC / INR)', tv: 'CRYPTO:BTCINR', sector: 'Digital Assets / Crypto', cap: '₹110L Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
-  { sym: 'ETH', name: 'Ethereum (ETH / INR)', tv: 'CRYPTO:ETHINR', sector: 'Digital Assets / Crypto', cap: '₹35L Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
+  // CRYPTO & COMMODITY ETFS
+  { sym: 'GOLDBEES', name: 'Nippon India ETF Gold BeES', tv: 'NSE:GOLDBEES', sector: 'Commodities / Gold ETF', category: 'Crypto & ETFs', cap: '₹12.4K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
+  { sym: 'SILVERBEES', name: 'Nippon India Silver ETF', tv: 'NSE:SILVERBEES', sector: 'Commodities / Silver ETF', category: 'Crypto & ETFs', cap: '₹3.8K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
+  { sym: 'BTCINR', name: 'Bitcoin / Indian Rupee', tv: 'COINBASE:BTCINR', sector: 'Digital Assets / Crypto', category: 'Crypto & ETFs', cap: '₹110L Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
+  { sym: 'ETHINR', name: 'Ethereum / Indian Rupee', tv: 'COINBASE:ETHINR', sector: 'Digital Assets / Crypto', category: 'Crypto & ETFs', cap: '₹35L Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
 
-  // TOP SENSEX HEAVYWEIGHTS
-  { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', sector: 'Energy & Retail', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
-  { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', sector: 'Information Technology', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
-  { sym: 'INFY', name: 'Infosys Ltd.', tv: 'BSE:INFY', sector: 'Information Technology', cap: '₹4.3L Cr', pe: 14.7, eps: 71.4, div: '4.55%' },
-  { sym: 'HDFCBANK', name: 'HDFC Bank Ltd.', tv: 'BSE:HDFCBANK', sector: 'Banking & Finance', cap: '₹5.9L Cr', pe: 15.8, eps: 49.2, div: '1.66%' },
-  { sym: 'BAJFINANCE', name: 'Bajaj Finance Ltd.', tv: 'BSE:BAJFINANCE', sector: 'NBFC', cap: '₹3.9L Cr', pe: 26.4, eps: 210.5, div: '0.35%' },
-  { sym: 'WIPRO', name: 'Wipro Ltd.', tv: 'BSE:WIPRO', sector: 'Information Technology', cap: '₹2.1L Cr', pe: 20.1, eps: 18.5, div: '0.25%' },
-  { sym: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', tv: 'BSE:SUNPHARMA', sector: 'Pharmaceuticals', cap: '₹3.6L Cr', pe: 34.2, eps: 41.0, div: '0.80%' },
-  { sym: 'ICICIBANK', name: 'ICICI Bank Ltd.', tv: 'BSE:ICICIBANK', sector: 'Banking & Finance', cap: '₹7.8L Cr', pe: 16.1, eps: 68.2, div: '0.85%' },
-  { sym: 'ASIANPAINT', name: 'Asian Paints Ltd.', tv: 'BSE:ASIANPAINT', sector: 'Consumer Goods', cap: '₹2.1L Cr', pe: 48.2, eps: 44.1, div: '1.20%' },
-  { sym: 'TITAN', name: 'Titan Company Ltd.', tv: 'BSE:TITAN', sector: 'Consumer Durables', cap: '₹2.8L Cr', pe: 82.4, eps: 38.5, div: '0.35%' },
-  { sym: 'ITC', name: 'ITC Ltd.', tv: 'BSE:ITC', sector: 'FMCG', cap: '₹5.8L Cr', pe: 28.5, eps: 16.2, div: '3.10%' },
-  { sym: 'LT', name: 'Larsen & Toubro Ltd.', tv: 'BSE:LT', sector: 'Engineering', cap: '₹4.9L Cr', pe: 31.2, eps: 92.0, div: '0.80%' },
-  { sym: 'AXISBANK', name: 'Axis Bank Ltd.', tv: 'BSE:AXISBANK', sector: 'Banking & Finance', cap: '₹3.5L Cr', pe: 13.2, eps: 81.5, div: '0.10%' },
-  { sym: 'KOTAKBANK', name: 'Kotak Mahindra Bank', tv: 'BSE:KOTAKBANK', sector: 'Banking & Finance', cap: '₹3.4L Cr', pe: 22.1, eps: 72.8, div: '0.11%' },
-  { sym: 'SBIN', name: 'State Bank of India', tv: 'BSE:SBIN', sector: 'Banking & Finance', cap: '₹7.2L Cr', pe: 10.5, eps: 72.0, div: '1.70%' },
-  { sym: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', tv: 'BSE:BHARTIARTL', sector: 'Telecommunications', cap: '₹8.1L Cr', pe: 54.0, eps: 24.1, div: '0.60%' },
-  { sym: 'HINDUNILVR', name: 'Hindustan Unilever', tv: 'BSE:HINDUNILVR', sector: 'FMCG', cap: '₹5.9L Cr', pe: 58.2, eps: 43.1, div: '1.60%' },
-  { sym: 'MM', name: 'Mahindra & Mahindra', tv: 'BSE:M_M', sector: 'Automobiles', cap: '₹3.2L Cr', pe: 28.1, eps: 98.4, div: '0.70%' },
-  { sym: 'MARUTI', name: 'Maruti Suzuki India', tv: 'BSE:MARUTI', sector: 'Automobiles', cap: '₹3.8L Cr', pe: 28.4, eps: 412.0, div: '1.00%' },
-  { sym: 'NTPC', name: 'NTPC Ltd.', tv: 'BSE:NTPC', sector: 'Utilities', cap: '₹3.7L Cr', pe: 18.2, eps: 21.0, div: '2.10%' }
+  // BANKING & FINANCE
+  { sym: 'HDFCBANK', name: 'HDFC Bank Ltd.', tv: 'BSE:HDFCBANK', sector: 'Banking & Finance', category: 'Banking & Finance', cap: '₹5.9L Cr', pe: 15.8, eps: 49.2, div: '1.66%' },
+  { sym: 'ICICIBANK', name: 'ICICI Bank Ltd.', tv: 'BSE:ICICIBANK', sector: 'Banking & Finance', category: 'Banking & Finance', cap: '₹7.8L Cr', pe: 16.1, eps: 68.2, div: '0.85%' },
+  { sym: 'SBIN', name: 'State Bank of India', tv: 'BSE:SBIN', sector: 'Banking & Finance', category: 'Banking & Finance', cap: '₹7.2L Cr', pe: 10.5, eps: 72.0, div: '1.70%' },
+  { sym: 'BAJFINANCE', name: 'Bajaj Finance Ltd.', tv: 'BSE:BAJFINANCE', sector: 'NBFC / Lending', category: 'Banking & Finance', cap: '₹3.9L Cr', pe: 26.4, eps: 210.5, div: '0.35%' },
+
+  // TECH & TELECOM
+  { sym: 'INFY', name: 'Infosys Ltd.', tv: 'BSE:INFY', sector: 'Information Technology', category: 'Tech & Telecom', cap: '₹4.3L Cr', pe: 14.7, eps: 71.4, div: '4.55%' },
+  { sym: 'TCS', name: 'Tata Consultancy Services', tv: 'BSE:TCS', sector: 'Information Technology', category: 'Tech & Telecom', cap: '₹7.8L Cr', pe: 15.8, eps: 136.0, div: '2.33%' },
+  { sym: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', tv: 'BSE:BHARTIARTL', sector: 'Telecommunications', category: 'Tech & Telecom', cap: '₹8.1L Cr', pe: 54.0, eps: 24.1, div: '0.60%' },
+
+  // ENERGY & MACRO
+  { sym: 'RELIANCE', name: 'Reliance Industries Ltd.', tv: 'BSE:RELIANCE', sector: 'Energy & Retail', category: 'Energy & Macro', cap: '₹17.9L Cr', pe: 37.7, eps: 35.2, div: '0.61%' },
+  { sym: 'OIL', name: 'Oil India Limited', tv: 'NSE:OIL', sector: 'Energy & Petroleum', category: 'Energy & Macro', cap: '₹72.4K Cr', pe: 12.1, eps: 42.8, div: '2.80%' },
+  { sym: 'NTPC', name: 'NTPC Ltd.', tv: 'BSE:NTPC', sector: 'Utilities & Power', category: 'Energy & Macro', cap: '₹3.7L Cr', pe: 18.2, eps: 21.0, div: '2.10%' },
+  { sym: 'INELP', name: 'India Electricity Production', tv: 'CEA:INELP', sector: 'Macro Index / Power', category: 'Energy & Macro', cap: 'National Index', pe: 'N/A', eps: 'N/A', div: '0.00%' },
+
+  // CONSUMER & INDUSTRIALS
+  { sym: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', tv: 'BSE:SUNPHARMA', sector: 'Pharmaceuticals', category: 'Consumer & Pharma', cap: '₹3.6L Cr', pe: 34.2, eps: 41.0, div: '0.80%' },
+  { sym: 'TITAN', name: 'Titan Company Ltd.', tv: 'BSE:TITAN', sector: 'Consumer Durables', category: 'Consumer & Pharma', cap: '₹2.8L Cr', pe: 82.4, eps: 38.5, div: '0.35%' },
+  { sym: 'ITC', name: 'ITC Ltd.', tv: 'BSE:ITC', sector: 'FMCG / Consumer', category: 'Consumer & Pharma', cap: '₹5.8L Cr', pe: 28.5, eps: 16.2, div: '3.10%' },
+  { sym: 'LT', name: 'Larsen & Toubro Ltd.', tv: 'BSE:LT', sector: 'Engineering & Infrastructure', category: 'Consumer & Pharma', cap: '₹4.9L Cr', pe: 31.2, eps: 92.0, div: '0.80%' },
+  { sym: 'MARUTI', name: 'Maruti Suzuki India', tv: 'BSE:MARUTI', sector: 'Automobiles', category: 'Consumer & Pharma', cap: '₹3.8L Cr', pe: 28.4, eps: 412.0, div: '1.00%' }
+];
+
+const CATEGORIES_LIST = [
+  'All Assets',
+  'Crypto & ETFs',
+  'Banking & Finance',
+  'Tech & Telecom',
+  'Energy & Macro',
+  'Consumer & Pharma'
 ];
 
 export default function RealSimulatorPage() {
@@ -40,15 +51,15 @@ export default function RealSimulatorPage() {
   const START_REAL = 50000; 
   const [realBalance, setRealBalance] = useState(START_REAL);
   const [realHoldings, setRealHoldings] = useState({});
-  const [selectedRealStock, setSelectedRealStock] = useState('GOLD');
+  const [selectedRealStock, setSelectedRealStock] = useState('GOLDBEES');
+  const [selectedCategory, setSelectedCategory] = useState('All Assets');
   const [realQtyInput, setRealQtyInput] = useState('1');
   const [isChartSyncing, setIsChartSyncing] = useState(false);
   const [marketStatusMessage, setMarketStatusMessage] = useState('');
 
   const [tvPrices, setTvPrices] = useState({});
 
-  // MULTI-STAGE ORDER EXECUTION FLOW STATE
-  // Steps: 'IDLE' -> 'REVIEW' -> 'PROCESSING' -> 'SUCCESS'
+  // MULTI-STAGE ORDER EXECUTION FLOW
   const [orderStage, setOrderStage] = useState('IDLE');
   const [pendingOrder, setPendingOrder] = useState(null);
   const [processingStatusText, setProcessingStatusText] = useState('Connecting to Exchange...');
@@ -56,7 +67,7 @@ export default function RealSimulatorPage() {
 
   const chartContainerRef = useRef(null);
 
-  // Sync Supabase session and user profile balance
+  // Sync Supabase session & profile wallet
   useEffect(() => {
     const syncUserSession = async () => {
       try {
@@ -134,6 +145,12 @@ export default function RealSimulatorPage() {
     return () => clearInterval(interval);
   }, [fetchTradingViewPrices]);
 
+  // Filter Watchlist Assets by Sector Category
+  const filteredAssetsList = useMemo(() => {
+    if (selectedCategory === 'All Assets') return STATIC_COMPANY_REGISTRY;
+    return STATIC_COMPANY_REGISTRY.filter(a => a.category === selectedCategory);
+  }, [selectedCategory]);
+
   const activeStaticContext = STATIC_COMPANY_REGISTRY.find(x => x.sym === selectedRealStock) || STATIC_COMPANY_REGISTRY[0];
   const activeTvQuote = tvPrices[selectedRealStock] || { price: 0, changePct: 'Syncing...' };
 
@@ -144,8 +161,7 @@ export default function RealSimulatorPage() {
   };
 
   const verifyMarketIsActive = () => {
-    // 24/7 Market Access allowed for Crypto & Global Gold/Silver
-    if (selectedRealStock === 'BTC' || selectedRealStock === 'ETH' || selectedRealStock === 'GOLD' || selectedRealStock === 'SILVER') {
+    if (selectedRealStock === 'BTCINR' || selectedRealStock === 'ETHINR') {
       return true;
     }
 
@@ -228,7 +244,7 @@ export default function RealSimulatorPage() {
   // STAGE 1: INITIATE ORDER REVIEW
   const initiateOrderReview = (type) => {
     if (!verifyMarketIsActive()) {
-      setMarketStatusMessage("🚨 Order Rejected: Stock exchanges (NSE/BSE) are currently closed. Live trading is permitted Monday to Friday, 9:15 AM – 3:30 PM IST (Gold & Crypto are available 24/7).");
+      setMarketStatusMessage("🚨 Order Rejected: Indian Stock & Commodity Exchanges are currently closed. Live trading is permitted Monday to Friday, 9:15 AM – 3:30 PM IST (Crypto pairs are available 24/7).");
       setTimeout(() => setMarketStatusMessage(''), 8000);
       return;
     }
@@ -319,7 +335,6 @@ export default function RealSimulatorPage() {
     setRealBalance(newBalance);
     setRealHoldings(updatedHoldings);
 
-    // Save to Supabase profile database and LocalStorage
     if (user) {
       localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
       await supabase
@@ -355,10 +370,14 @@ export default function RealSimulatorPage() {
 
       <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
         <div className="space-y-6 animate-fadeInFast">
+          
+          {/* TOP HEADER */}
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">Multi-Asset Portfolio Simulator</h1>
-              <p className="text-slate-400 text-xs mt-1 font-medium">Equities, Commodities (Gold/Silver) & Digital Assets synced via TradingView</p>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                <span className="text-[#ff3333]">PRO</span> MULTI-ASSET SIMULATOR ⚡
+              </h1>
+              <p className="text-slate-400 text-xs mt-1 font-medium">Equities, Gold/Silver ETFs, Energy & Crypto assets segregated by market sectors.</p>
             </div>
             <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm w-fit">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live Execution Desk Active
@@ -373,19 +392,19 @@ export default function RealSimulatorPage() {
 
           {/* PORTFOLIO METRICS SHEET */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl hover:border-[#7a0000] transition-colors">
               <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Available Cash Balance</span>
               <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(realBalance).toLocaleString('en-IN')}</div>
             </div>
-            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl hover:border-[#7a0000] transition-colors">
               <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Holdings Portfolio Value</span>
               <div className="text-lg font-black mt-1 font-mono text-white">₹{Math.round(getRealHoldingsValue()).toLocaleString('en-IN')}</div>
             </div>
-            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl hover:border-[#7a0000] transition-colors">
               <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Account Net Worth</span>
               <div className="text-lg font-black mt-1 font-mono text-emerald-400">₹{Math.round(realBalance + getRealHoldingsValue()).toLocaleString('en-IN')}</div>
             </div>
-            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl hover:border-[#7a0000] transition-colors">
               <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Net Margin Return</span>
               <div className={`text-lg font-black mt-1 font-mono ${(realBalance + getRealHoldingsValue() - START_REAL) >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
                 ₹{Math.round(realBalance + getRealHoldingsValue() - START_REAL).toLocaleString('en-IN')}
@@ -393,18 +412,38 @@ export default function RealSimulatorPage() {
             </div>
           </div>
 
+          {/* MAIN GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* MULTI-ASSET WATCHLIST */}
-            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl h-fit">
-              <div className="p-4 bg-[#1a0808] border-b border-[#2b0808] font-black text-xs uppercase tracking-wider text-slate-300">
-                Market Asset Watchlist
+            {/* SECTOR CATEGORIZED WATCHLIST */}
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-3xl overflow-hidden shadow-2xl h-fit space-y-3 p-4">
+              
+              <div className="font-black text-xs uppercase tracking-wider text-slate-300 pb-2 border-b border-[#2b0808] flex items-center justify-between">
+                <span>Asset Sector Watchlist</span>
+                <span className="text-[10px] text-[#ff3333] font-mono">{filteredAssetsList.length} Items</span>
               </div>
-              <div className="divide-y divide-[#2b0808] max-h-[500px] overflow-y-auto">
-                {STATIC_COMPANY_REGISTRY.map(s => {
+
+              {/* SECTOR CATEGORY PILLS */}
+              <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+                {CATEGORIES_LIST.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-[#ff3333] text-white shadow-md' : 'bg-[#1a0808] text-slate-400 hover:text-white border border-[#2b0808]'}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* ASSETS LIST */}
+              <div className="divide-y divide-[#2b0808] max-h-[480px] overflow-y-auto pr-1">
+                {filteredAssetsList.map(s => {
                   const priceObj = tvPrices[s.sym] || { price: 0, changePct: 'Syncing...' };
                   const hold = realHoldings[s.sym];
-                  const isCryptoOrGold = s.sym === 'GOLD' || s.sym === 'SILVER' || s.sym === 'BTC' || s.sym === 'ETH';
+                  const isCrypto = s.sym === 'BTCINR' || s.sym === 'ETHINR';
+                  const isSelected = selectedRealStock === s.sym;
+
                   return (
                     <button 
                       key={s.sym}
@@ -412,27 +451,29 @@ export default function RealSimulatorPage() {
                         setSelectedRealStock(s.sym);
                         if (orderStage !== 'IDLE') resetOrderDesk();
                       }}
-                      className={`w-full p-3.5 text-left flex justify-between items-center transition-colors hover:bg-[#1a0808] ${selectedRealStock === s.sym ? 'bg-[#1a0808] border-l-4 border-l-[#ff3333]' : ''}`}
+                      className={`w-full p-3 text-left flex justify-between items-center transition-all rounded-2xl my-1 hover:bg-[#1a0808] ${isSelected ? 'bg-[#1a0808] border border-[#7a0000] shadow-lg' : ''}`}
                     >
-                      <div>
+                      <div className="space-y-0.5">
                         <div className="font-black text-sm text-white flex items-center gap-1.5">
                           {s.sym}
-                          {isCryptoOrGold && (
-                            <span className="text-[9px] bg-[#2b0808] text-[#ff3333] px-1.5 py-0.5 rounded uppercase font-bold">
+                          {isCrypto && (
+                            <span className="text-[8px] bg-[#2b0808] text-[#ff3333] px-1.5 py-0.5 rounded font-black border border-[#7a0000]/40">
                               24/7
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-medium max-w-[140px] truncate">{s.name}</div>
+                        <div className="text-[10px] text-slate-400 font-medium max-w-[130px] truncate">{s.name}</div>
+                        <span className="text-[9px] text-[#ff3333] font-bold block">{s.sector}</span>
                       </div>
+
                       <div className="text-right">
                         <div className="font-mono font-bold text-xs text-white">
-                          {priceObj.price > 0 ? `₹${priceObj.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Syncing TV...'}
+                          {priceObj.price > 0 ? `₹${priceObj.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Syncing...'}
                         </div>
-                        <div className={`text-[11px] font-bold ${priceObj.changePct.startsWith('-') ? 'text-rose-500' : 'text-emerald-400'}`}>
+                        <div className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg inline-block mt-0.5 ${priceObj.changePct.startsWith('-') ? 'text-rose-400 bg-rose-950/40' : 'text-emerald-400 bg-emerald-950/40'}`}>
                           {priceObj.changePct}
                         </div>
-                        {hold && <div className="text-[10px] text-[#ff3333] font-black mt-0.5">{hold.shares} Units</div>}
+                        {hold && <div className="text-[9px] text-emerald-400 font-black mt-1">Owned: {hold.shares} Units</div>}
                       </div>
                     </button>
                   );
@@ -444,7 +485,7 @@ export default function RealSimulatorPage() {
             <div className="lg:col-span-2 space-y-6">
               
               {/* REALISTIC MULTI-STAGE ORDER PANEL */}
-              <div className="bg-[#0f0505] border border-[#2b0808] p-6 rounded-2xl shadow-xl transition-all min-h-[260px] flex flex-col justify-between">
+              <div className="bg-[#0f0505] border border-[#2b0808] p-6 rounded-3xl shadow-2xl transition-all min-h-[260px] flex flex-col justify-between">
                 
                 {/* STAGE 1: ORDER INPUT */}
                 {orderStage === 'IDLE' && (
@@ -477,20 +518,20 @@ export default function RealSimulatorPage() {
                       <div className="flex gap-3 pt-1">
                         <button 
                           onClick={() => initiateOrderReview('BUY')}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs uppercase font-black tracking-wider py-3 rounded-xl shadow-md transition-all active:scale-95"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs uppercase font-black tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-95"
                         >
                           Buy Asset
                         </button>
                         <button 
                           onClick={() => initiateOrderReview('SELL')}
-                          className="flex-1 bg-rose-700 hover:bg-rose-800 text-white text-xs uppercase font-black tracking-wider py-3 rounded-xl shadow-md transition-all active:scale-95"
+                          className="flex-1 bg-rose-700 hover:bg-rose-800 text-white text-xs uppercase font-black tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-95"
                         >
                           Sell Asset
                         </button>
                       </div>
                     </div>
 
-                    <div className="bg-[#1a0808] border border-[#2b0808] p-4 rounded-xl space-y-2.5 text-xs">
+                    <div className="bg-[#1a0808] border border-[#2b0808] p-4 rounded-2xl space-y-2.5 text-xs">
                       <h3 className="font-black uppercase text-slate-400 tracking-wider text-[10px]">Asset Valuation Profile</h3>
                       <div className="flex justify-between border-b border-[#2b0808] pb-2">
                         <span className="text-slate-400">Market Cap:</span>
@@ -502,7 +543,7 @@ export default function RealSimulatorPage() {
                       </div>
                       <div className="flex justify-between border-b border-[#2b0808] pb-2">
                         <span className="text-slate-400">EPS Yield:</span>
-                        <span className="font-bold font-mono text-white">₹{mergedActiveRealStock.eps}</span>
+                        <span className="font-bold font-mono text-white">{mergedActiveRealStock.eps === 'N/A' ? 'N/A' : `₹${mergedActiveRealStock.eps}`}</span>
                       </div>
                       <div className="flex justify-between pt-0.5">
                         <span className="text-slate-400">Yield Div:</span>
@@ -524,7 +565,7 @@ export default function RealSimulatorPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] text-slate-400 uppercase font-black">Exchange Routing</div>
-                        <div className="text-xs font-bold text-white font-mono">BSE / MCX / Crypto Spot</div>
+                        <div className="text-xs font-bold text-white font-mono">BSE / NSE / Coinbase Spot</div>
                       </div>
                     </div>
 
@@ -550,13 +591,13 @@ export default function RealSimulatorPage() {
                     <div className="flex flex-col sm:flex-row gap-3 pt-1">
                       <button 
                         onClick={processAndExecuteOrder}
-                        className={`flex-1 ${pendingOrder.type === 'BUY' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-700 hover:bg-rose-800'} text-white text-xs font-black uppercase tracking-wider py-3 rounded-xl shadow-lg transition-all active:scale-95`}
+                        className={`flex-1 ${pendingOrder.type === 'BUY' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-700 hover:bg-rose-800'} text-white text-xs font-black uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-95`}
                       >
                         Submit Order to Market
                       </button>
                       <button 
                         onClick={resetOrderDesk}
-                        className="bg-[#1a0808] hover:bg-[#2b0808] border border-[#2b0808] text-slate-300 text-xs font-bold uppercase tracking-wider px-6 py-3 rounded-xl transition-all"
+                        className="bg-[#1a0808] hover:bg-[#2b0808] border border-[#2b0808] text-slate-300 text-xs font-bold uppercase tracking-wider px-6 py-3.5 rounded-xl transition-all"
                       >
                         Cancel Ticket
                       </button>
@@ -623,7 +664,7 @@ export default function RealSimulatorPage() {
               </div>
 
               {/* TRADINGVIEW CONTAINER */}
-              <div className="bg-[#000000] border border-[#2b0808] rounded-2xl overflow-hidden shadow-xl relative h-[420px] w-full">
+              <div className="bg-[#000000] border border-[#2b0808] rounded-3xl overflow-hidden shadow-2xl relative h-[420px] w-full">
                 {isChartSyncing && (
                   <div className="absolute inset-0 bg-black/80 z-20 flex items-center justify-center text-xs font-bold text-[#ff3333] animate-pulse">
                     ⚡ Syncing TradingView Data Feeds...
