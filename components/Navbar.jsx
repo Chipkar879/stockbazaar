@@ -72,6 +72,7 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-400">
           <Link href="/" className={`pb-0.5 transition-all ${pathname === '/' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Home</Link>
           <Link href="/simulator" className={`pb-0.5 transition-all ${pathname === '/simulator' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Simulator</Link>
+          <Link href="/arena" className={`pb-0.5 transition-all ${pathname === '/arena' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Arena</Link>
           <Link href="/courses" className={`pb-0.5 transition-all ${pathname === '/courses' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Modules</Link>
           <Link href="/quiz" className={`pb-0.5 transition-all ${pathname === '/quiz' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Daily Quiz</Link>
           <Link href="/leaderboard" className={`pb-0.5 transition-all ${pathname === '/leaderboard' ? 'text-[#ff3333] border-b-2 border-[#7a0000]' : 'hover:text-white'}`}>Leaderboard</Link>
@@ -121,6 +122,7 @@ export default function Navbar() {
       <div className={`absolute top-full left-0 right-0 w-full bg-[#0f0505] border-b border-[#2b0808] shadow-2xl p-5 flex flex-col gap-2.5 text-xs font-bold text-slate-300 md:hidden transition-all duration-300 origin-top ${isMobileMenuOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
         <Link href="/" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Home</Link>
         <Link href="/simulator" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/simulator' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Simulator</Link>
+        <Link href="/arena" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/arena' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Arena</Link>
         <Link href="/courses" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/courses' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Modules</Link>
         <Link href="/quiz" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/quiz' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Daily Quiz</Link>
         <Link href="/leaderboard" onClick={closeMenu} className={`p-2.5 rounded-xl transition-colors ${pathname === '/leaderboard' ? 'bg-[#1a0808] text-[#ff3333] border border-[#2b0808]' : 'hover:bg-[#1a0808]'}`}>Leaderboard</Link>

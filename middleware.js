@@ -36,6 +36,8 @@ export const config = {
     '/signup',
     '/simulator',
     '/simulator/:path*',
+    '/arena',
+    '/arena/:path*',
     '/courses',
     '/courses/:path*',
     '/quiz',
