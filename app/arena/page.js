@@ -79,18 +79,29 @@ export default function ArenaPage() {
   const [gameOver, setGameOver] = useState(false);
   const [selectedStockModal, setSelectedStockModal] = useState(null);
   const [tradeQty, setTradeQty] = useState(1);
+  const [selectedSectorFilter, setSelectedSectorFilter] = useState('ALL');
+  const [streakCount, setStreakCount] = useState(0);
 
   const [gameStocks, setGameStocks] = useState([
-    { sym: 'TECH', name: 'TechCorp Inc.', price: 1250, prevClose: 1250, changePct: '0.00%', icon: '💻', sector: 'Cybernetics', desc: 'Next-gen AI neural chip developer expanding across global markets.', history: [1200, 1220, 1210, 1230, 1250] },
-    { sym: 'GRN', name: 'GreenEnergy Co.', price: 380, prevClose: 380, changePct: '0.00%', icon: '⚡', sector: 'Clean Tech', desc: 'Harnessing fusion solar power plants for zero-emission energy.', history: [360, 370, 365, 375, 380] },
-    { sym: 'MOON', name: 'AeroSpace Ltd.', price: 2340, prevClose: 2340, changePct: '0.00%', icon: '🚀', sector: 'Space Infra', desc: 'Building asteroid mining shuttles and lunar orbital stations.', history: [2200, 2250, 2300, 2280, 2340] },
-    { sym: 'CHIP', name: 'SemiconductorX', price: 760, prevClose: 760, changePct: '0.00%', icon: '🔬', sector: 'Hardware', desc: 'Manufacturing 1nm micro-quantum processors for autonomous tech.', history: [780, 770, 750, 760, 760] },
-    { sym: 'ZOM', name: 'ZombieGames', price: 710, prevClose: 710, changePct: '0.00%', icon: '🎮', sector: 'Gaming & VR', desc: 'Creators of the world’s biggest full-immersion metaverse MMO.', history: [690, 700, 720, 705, 710] },
-    { sym: 'FOOD', name: 'FoodieHub', price: 425, prevClose: 425, changePct: '0.00%', icon: '🍕', sector: 'Consumer', desc: 'Autonomous drone food delivery service operating in 100+ cities.', history: [400, 410, 415, 420, 425] },
-    { sym: 'BANK', name: 'DigitalBank Ltd.', price: 1860, prevClose: 1860, changePct: '0.00%', icon: '🏦', sector: 'FinTech', desc: 'Decentralized instant payment settlement network for Gen-Z.', history: [1800, 1820, 1840, 1850, 1860] },
-    { sym: 'EDU', name: 'EduTech Corp.', price: 312, prevClose: 312, changePct: '0.00%', icon: '🎓', sector: 'EdTech', desc: 'AI tutors customizing learning pathways for millions of students.', history: [300, 305, 310, 308, 312] },
-    { sym: 'SPORT', name: 'SportXcel', price: 584, prevClose: 584, changePct: '0.00%', icon: '🏆', sector: 'Athletics', desc: 'Smart athletic gear tracking biomechanics and performance live.', history: [560, 570, 575, 580, 584] },
-    { sym: 'PHARMA', name: 'PharmaCorp', price: 1120, prevClose: 1120, changePct: '0.00%', icon: '🧪', sector: 'Biotech', desc: 'Pioneering gene-editing therapies and nanobot health diagnostics.', history: [1100, 1110, 1105, 1115, 1120] },
+    // SECTOR 1: CYBER & AI
+    { sym: 'TECH', name: 'TechCorp Inc.', price: 1250, prevClose: 1250, changePct: '0.00%', icon: '💻', sector: 'Cyber & AI', desc: 'Next-gen AI neural chip developer expanding across global markets.', history: [1200, 1220, 1210, 1230, 1250] },
+    { sym: 'CHIP', name: 'SemiconductorX', price: 760, prevClose: 760, changePct: '0.00%', icon: '🔬', sector: 'Cyber & AI', desc: 'Manufacturing 1nm micro-quantum processors for autonomous tech.', history: [780, 770, 750, 760, 760] },
+    
+    // SECTOR 2: SPACE & CLEAN TECH
+    { sym: 'MOON', name: 'AeroSpace Ltd.', price: 2340, prevClose: 2340, changePct: '0.00%', icon: '🚀', sector: 'Space & CleanTech', desc: 'Building asteroid mining shuttles and lunar orbital stations.', history: [2200, 2250, 2300, 2280, 2340] },
+    { sym: 'GRN', name: 'GreenEnergy Co.', price: 380, prevClose: 380, changePct: '0.00%', icon: '⚡', sector: 'Space & CleanTech', desc: 'Harnessing fusion solar power plants for zero-emission energy.', history: [360, 370, 365, 375, 380] },
+
+    // SECTOR 3: HARDWARE & GAMING
+    { sym: 'ZOM', name: 'ZombieGames', price: 710, prevClose: 710, changePct: '0.00%', icon: '🎮', sector: 'Hardware & Gaming', desc: 'Creators of the world’s biggest full-immersion metaverse MMO.', history: [690, 700, 720, 705, 710] },
+    { sym: 'SPORT', name: 'SportXcel', price: 584, prevClose: 584, changePct: '0.00%', icon: '🏆', sector: 'Hardware & Gaming', desc: 'Smart athletic gear tracking biomechanics and performance live.', history: [560, 570, 575, 580, 584] },
+
+    // SECTOR 4: FINTECH & BIO
+    { sym: 'BANK', name: 'DigitalBank Ltd.', price: 1860, prevClose: 1860, changePct: '0.00%', icon: '🏦', sector: 'FinTech & Bio', desc: 'Decentralized instant payment settlement network for Gen-Z.', history: [1800, 1820, 1840, 1850, 1860] },
+    { sym: 'PHARMA', name: 'PharmaCorp', price: 1120, prevClose: 1120, changePct: '0.00%', icon: '🧪', sector: 'FinTech & Bio', desc: 'Pioneering gene-editing therapies and nanobot health diagnostics.', history: [1100, 1110, 1105, 1115, 1120] },
+
+    // SECTOR 5: CONSUMER & EDU
+    { sym: 'FOOD', name: 'FoodieHub', price: 425, prevClose: 425, changePct: '0.00%', icon: '🍕', sector: 'Consumer & Edu', desc: 'Autonomous drone food delivery service operating in 100+ cities.', history: [400, 410, 415, 420, 425] },
+    { sym: 'EDU', name: 'EduTech Corp.', price: 312, prevClose: 312, changePct: '0.00%', icon: '🎓', sector: 'Consumer & Edu', desc: 'AI tutors customizing learning pathways for millions of students.', history: [300, 305, 310, 308, 312] }
   ]);
 
   const FAKE_LB = [
@@ -191,6 +202,7 @@ export default function ArenaPage() {
         }
         return { ...prev, [sym]: { sym, shares: qty, avgPrice: targetStock.price } };
       });
+      setStreakCount(s => s + 1);
     } else {
       const existing = gameHoldings[sym];
       if (!existing || existing.shares < qty) {
@@ -206,6 +218,7 @@ export default function ArenaPage() {
         }
         return { ...prev, [sym]: { ...prev[sym], shares: prev[sym].shares - qty } };
       });
+      setStreakCount(s => s + 1);
     }
   };
 
@@ -217,6 +230,7 @@ export default function ArenaPage() {
     setGameOver(false);
     setActiveEvent(null);
     setSelectedStockModal(null);
+    setStreakCount(0);
   };
 
   const currentTotalGameVal = gameBalance + getGameHoldingsValue();
@@ -225,6 +239,12 @@ export default function ArenaPage() {
 
   const activeModalStockData = gameStocks.find(s => s.sym === selectedStockModal);
   const activeModalHolding = activeModalStockData ? gameHoldings[activeModalStockData.sym] : null;
+
+  // Sector filtering logic
+  const SECTOR_LIST = ['ALL', 'Cyber & AI', 'Space & CleanTech', 'Hardware & Gaming', 'FinTech & Bio', 'Consumer & Edu'];
+  const filteredGameStocks = selectedSectorFilter === 'ALL' 
+    ? gameStocks 
+    : gameStocks.filter(st => st.sector === selectedSectorFilter);
 
   return (
     <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-20 pb-16">
@@ -235,10 +255,20 @@ export default function ArenaPage() {
         {/* HEADER BAR */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-[#1a0808] border border-[#7a0000] text-[#ff3333] px-2.5 py-0.5 rounded-md">
+                Fast Arcade Mode
+              </span>
+              {streakCount > 0 && (
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-950/60 border border-amber-500/40 text-amber-400 px-2.5 py-0.5 rounded-md animate-pulse">
+                  🔥 Trade Combo: {streakCount}x
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-white mt-1.5 flex items-center gap-2">
               <span className="text-[#ff3333]">30-DAY</span> VOLATILITY ARENA ⚡
             </h1>
-            <p className="text-slate-400 text-xs mt-1 font-medium">Click any card to inspect company stats, live charts, and place instant trades.</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium">Browse high-beta assets segregated by sector. Click any card to trade instantly.</p>
           </div>
 
           <div className="flex items-center gap-3 bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-2xl shadow-xl w-fit">
@@ -264,15 +294,15 @@ export default function ArenaPage() {
         {/* METRICS DASHBOARD */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Arena Cash</span>
+            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Arena Cash Balance</span>
             <div className="text-lg font-black mt-1 font-mono text-white">₹{gameBalance.toLocaleString('en-IN')}</div>
           </div>
           <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Holdings Worth</span>
+            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Holdings Portfolio Worth</span>
             <div className="text-lg font-black mt-1 font-mono text-white">₹{getGameHoldingsValue().toLocaleString('en-IN')}</div>
           </div>
           <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Net Worth</span>
+            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Arena Net Worth</span>
             <div className="text-lg font-black mt-1 font-mono text-[#ff3333]">₹{currentTotalGameVal.toLocaleString('en-IN')}</div>
           </div>
           <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
@@ -283,66 +313,98 @@ export default function ArenaPage() {
           </div>
         </div>
 
+        {/* SECTOR FILTER TABS */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-[#2b0808]">
+          <span className="text-[10px] font-black uppercase text-slate-500 mr-2 whitespace-nowrap">Filter Sectors:</span>
+          {SECTOR_LIST.map(sec => (
+            <button
+              key={sec}
+              onClick={() => setSelectedSectorFilter(sec)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedSectorFilter === sec ? 'bg-[#ff3333] text-white border-[#ff3333] shadow-lg shadow-[#ff3333]/20' : 'bg-[#0f0505] border-[#2b0808] text-slate-400 hover:text-white hover:bg-[#1a0808]'}`}
+            >
+              {sec === 'ALL' ? '⚡ All Sectors' : sec}
+            </button>
+          ))}
+        </div>
+
         {/* MAIN LAYOUT: CARDS GRID + LEADERBOARD */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* CARDS GRID */}
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {gameStocks.map(st => {
-              const hold = gameHoldings[st.sym];
-              const isUp = !st.changePct.startsWith('-');
+          {/* CARDS GRID BY SECTOR */}
+          <div className="lg:col-span-2 space-y-6">
+            {SECTOR_LIST.filter(s => selectedSectorFilter === 'ALL' ? s !== 'ALL' : s === selectedSectorFilter).map(secName => {
+              const sectorStocks = filteredGameStocks.filter(st => st.sector === secName);
+              if (sectorStocks.length === 0) return null;
 
               return (
-                <div 
-                  key={st.sym}
-                  onClick={() => {
-                    setSelectedStockModal(st.sym);
-                    setTradeQty(1);
-                  }}
-                  className="bg-[#0f0505] border border-[#2b0808] hover:border-[#7a0000] p-5 rounded-3xl shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group flex flex-col justify-between space-y-4 relative overflow-hidden"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl p-2.5 bg-[#1a0808] border border-[#2b0808] rounded-2xl group-hover:scale-110 transition-transform">
-                        {st.icon}
-                      </div>
-                      <div>
-                        <h3 className="font-black text-white text-base group-hover:text-[#ff3333] transition-colors">{st.sym}</h3>
-                        <p className="text-xs text-slate-400 font-medium">{st.name}</p>
-                      </div>
-                    </div>
-                    <span className={`text-xs font-black px-2.5 py-1 rounded-xl font-mono border ${isUp ? 'text-emerald-400 bg-emerald-950/40 border-emerald-900/60' : 'text-rose-400 bg-rose-950/40 border-rose-900/60'}`}>
-                      {st.changePct}
-                    </span>
+                <div key={secName} className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#2b0808] pb-1.5">
+                    <h2 className="text-xs font-black uppercase tracking-wider text-[#ff3333] flex items-center gap-1.5">
+                      <span>🏷️</span> {secName}
+                    </h2>
+                    <span className="text-[10px] text-slate-500 font-bold">{sectorStocks.length} Assets</span>
                   </div>
 
-                  {/* MINI SPARKLINE TREND GRAPH */}
-                  <div className="h-10 w-full flex items-end gap-1.5 pt-2">
-                    {st.history.map((val, idx) => {
-                      const max = Math.max(...st.history);
-                      const min = Math.min(...st.history);
-                      const heightPct = max === min ? 50 : Math.max(15, ((val - min) / (max - min)) * 100);
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {sectorStocks.map(st => {
+                      const hold = gameHoldings[st.sym];
+                      const isUp = !st.changePct.startsWith('-');
+
                       return (
                         <div 
-                          key={idx} 
-                          className={`flex-1 rounded-t transition-all ${isUp ? 'bg-emerald-500/60 group-hover:bg-emerald-400' : 'bg-rose-500/60 group-hover:bg-rose-400'}`}
-                          style={{ height: `${heightPct}%` }}
-                        />
+                          key={st.sym}
+                          onClick={() => {
+                            setSelectedStockModal(st.sym);
+                            setTradeQty(1);
+                          }}
+                          className="bg-[#0f0505] border border-[#2b0808] hover:border-[#7a0000] p-5 rounded-3xl shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group flex flex-col justify-between space-y-4 relative overflow-hidden"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl p-2.5 bg-[#1a0808] border border-[#2b0808] rounded-2xl group-hover:scale-110 transition-transform">
+                                {st.icon}
+                              </div>
+                              <div>
+                                <h3 className="font-black text-white text-base group-hover:text-[#ff3333] transition-colors">{st.sym}</h3>
+                                <p className="text-xs text-slate-400 font-medium">{st.name}</p>
+                              </div>
+                            </div>
+                            <span className={`text-xs font-black px-2.5 py-1 rounded-xl font-mono border ${isUp ? 'text-emerald-400 bg-emerald-950/40 border-emerald-900/60' : 'text-rose-400 bg-rose-950/40 border-rose-900/60'}`}>
+                              {st.changePct}
+                            </span>
+                          </div>
+
+                          {/* MINI SPARKLINE TREND GRAPH */}
+                          <div className="h-10 w-full flex items-end gap-1.5 pt-2">
+                            {st.history.map((val, idx) => {
+                              const max = Math.max(...st.history);
+                              const min = Math.min(...st.history);
+                              const heightPct = max === min ? 50 : Math.max(15, ((val - min) / (max - min)) * 100);
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className={`flex-1 rounded-t transition-all ${isUp ? 'bg-emerald-500/60 group-hover:bg-emerald-400' : 'bg-rose-500/60 group-hover:bg-rose-400'}`}
+                                  style={{ height: `${heightPct}%` }}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2 border-t border-[#2b0808] text-xs">
+                            <div>
+                              <span className="text-[10px] text-slate-500 uppercase font-black block">Live Unit Rate</span>
+                              <span className="font-mono font-black text-white text-sm">₹{st.price.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-500 uppercase font-black block">Your Position</span>
+                              <span className="font-mono font-black text-[#ff3333]">
+                                {hold ? `${hold.shares} Units` : 'None'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2 border-t border-[#2b0808] text-xs">
-                    <div>
-                      <span className="text-[10px] text-slate-500 uppercase font-black block">Live Unit Price</span>
-                      <span className="font-mono font-black text-white text-sm">₹{st.price.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-slate-500 uppercase font-black block">Your Position</span>
-                      <span className="font-mono font-black text-[#ff3333]">
-                        {hold ? `${hold.shares} Units` : 'None'}
-                      </span>
-                    </div>
                   </div>
                 </div>
               );
