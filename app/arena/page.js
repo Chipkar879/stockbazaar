@@ -87,10 +87,8 @@ export default function ArenaPage() {
     { name: 'PaperTrader 📄', score: 9200 },
   ];
 
-  // DIRECT HOME ROUTING FUNCTION FOR X BUTTON
-  const handleExitToHome = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // HANDLE HEADER CLOSE BUTTON (X) CLICK
+  const handleHeaderCloseClick = () => {
     if (gameState === 'RUNNING') {
       setPendingHref('/');
       setShowExitModal(true);
@@ -289,204 +287,22 @@ export default function ArenaPage() {
     <main className="min-h-screen bg-black text-slate-100 antialiased font-sans relative max-w-full overflow-x-hidden pt-20 pb-16">
       <Navbar />
 
-      <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
-        
-        {/* HEADER BAR WITH ELEVATED Z-INDEX TO PREVENT OVERLAY BLOCKING */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4 relative z-40">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <span className="text-[#ff3333]">30-DAY</span> VOLATILITY ARENA ⚡
-            </h1>
-            <p className="text-slate-400 text-xs mt-1 font-medium">Click any card to inspect company stats, live charts, and place instant trades.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-2xl shadow-xl w-fit">
-              <div className="text-xs">
-                <span className="text-slate-400 block text-[10px] uppercase font-black">Timeline Progress</span>
-                <span className="font-mono font-black text-white">Day {day} / 30</span>
-              </div>
-              <div className="h-6 w-[1px] bg-[#2b0808]" />
-              <div className="text-xs">
-                <span className="text-slate-400 block text-[10px] uppercase font-black">Next Tick</span>
-                <span className="font-mono font-black text-[#ff3333]">{autoSecsLeft}s</span>
-              </div>
-            </div>
-
-            {/* CLICKABLE HEADER EXIT BUTTON */}
-            <button
-              type="button"
-              onClick={handleExitToHome}
-              title="Close Arena & Return Home"
-              className="h-10 w-10 rounded-2xl bg-[#1a0808] hover:bg-[#7a0000] border border-[#2b0808] hover:border-[#ff3333] text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition-all shadow-lg active:scale-95 cursor-pointer z-50"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* EVENT BROADCAST */}
-        {activeEvent && (
-          <div className={`p-4 rounded-2xl border text-xs font-black shadow-lg animate-bounce ${activeEvent.col}`}>
-            {activeEvent.msg}
-          </div>
-        )}
-
-        {/* METRICS DASHBOARD */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Arena Cash</span>
-            <div className="text-lg font-black mt-1 font-mono text-white">₹{gameBalance.toLocaleString('en-IN')}</div>
-          </div>
-          <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Holdings Worth</span>
-            <div className="text-lg font-black mt-1 font-mono text-white">₹{getGameHoldingsValue().toLocaleString('en-IN')}</div>
-          </div>
-          <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Net Worth</span>
-            <div className="text-lg font-black mt-1 font-mono text-[#ff3333]">₹{currentTotalGameVal.toLocaleString('en-IN')}</div>
-          </div>
-          <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
-            <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Net Profit / Loss</span>
-            <div className={`text-lg font-black mt-1 font-mono ${(currentTotalGameVal - START_GAME) >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-              ₹{(currentTotalGameVal - START_GAME).toLocaleString('en-IN')}
-            </div>
-          </div>
-        </div>
-
-        {/* MAIN LAYOUT: COMPACT CARDS GRID + LEADERBOARD */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* COMPACT CARDS GRID */}
-          <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {gameStocks.map(st => {
-              const hold = gameHoldings[st.sym];
-              const isUp = !st.changePct.startsWith('-');
-
-              return (
-                <div 
-                  key={st.sym}
-                  onClick={() => {
-                    if (gameState === 'RUNNING') {
-                      setSelectedStockModal(st.sym);
-                      setTradeQty(1);
-                    }
-                  }}
-                  className="bg-[#0f0505] border border-[#2b0808] hover:border-[#7a0000] p-3 rounded-2xl shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group flex flex-col justify-between space-y-2 relative overflow-hidden"
-                >
-                  <div className="flex justify-between items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <div className="text-lg p-1.5 bg-[#1a0808] border border-[#2b0808] rounded-xl group-hover:scale-105 transition-transform">
-                        {st.icon}
-                      </div>
-                      <div>
-                        <h3 className="font-black text-white text-xs group-hover:text-[#ff3333] transition-colors">{st.sym}</h3>
-                        <p className="text-[10px] text-slate-400 font-medium truncate max-w-[70px]">{st.name}</p>
-                      </div>
-                    </div>
-                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-lg font-mono border ${isUp ? 'text-emerald-400 bg-emerald-950/40 border-emerald-900/60' : 'text-rose-400 bg-rose-950/40 border-rose-900/60'}`}>
-                      {st.changePct}
-                    </span>
-                  </div>
-
-                  {/* MINI SPARKLINE TREND GRAPH */}
-                  <div className="h-6 w-full flex items-end gap-1 pt-1">
-                    {st.history.map((val, idx) => {
-                      const max = Math.max(...st.history);
-                      const min = Math.min(...st.history);
-                      const heightPct = max === min ? 50 : Math.max(15, ((val - min) / (max - min)) * 100);
-                      return (
-                        <div 
-                          key={idx} 
-                          className={`flex-1 rounded-t transition-all ${isUp ? 'bg-emerald-500/60 group-hover:bg-emerald-400' : 'bg-rose-500/60 group-hover:bg-rose-400'}`}
-                          style={{ height: `${heightPct}%` }}
-                        />
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex justify-between items-center pt-1 border-t border-[#2b0808] text-[10px]">
-                    <div>
-                      <span className="font-mono font-black text-white">₹{st.price.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono font-black text-[#ff3333]">
-                        {hold ? `${hold.shares} U` : '0'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* LEADERBOARD SIDEBAR */}
-          <div className="space-y-4">
-            <div className="bg-[#0f0505] border border-[#2b0808] rounded-3xl p-5 shadow-xl space-y-4">
-              <h3 className="font-black text-xs uppercase tracking-wider text-slate-400 border-b border-[#2b0808] pb-3 flex items-center justify-between">
-                <span>Arena Standings</span>
-                <span className="text-[#ff3333]">Season 1</span>
-              </h3>
-              <div className="space-y-2.5">
-                {sortedLeaderboard.map((player, idx) => (
-                  <div 
-                    key={player.name}
-                    className={`flex justify-between items-center text-xs p-3 rounded-2xl border ${player.name.includes('You') ? 'bg-[#1a0808] border-[#7a0000] font-black text-[#ff3333]' : 'border-[#2b0808] bg-[#0f0505] text-slate-300'}`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="font-mono font-black text-slate-500 text-sm">#{idx + 1}</span>
-                      <span>{player.name}</span>
-                    </div>
-                    <span className="font-mono font-bold text-white">₹{Math.round(player.score).toLocaleString('en-IN')}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button 
-                onClick={resetChallengeArena}
-                className="w-full text-center py-3 border border-[#2b0808] hover:border-rose-900/60 text-slate-400 hover:text-rose-400 text-xs font-bold bg-[#1a0808] rounded-2xl transition-all cursor-pointer"
-              >
-                Reset Arena Game
-              </button>
-            </div>
-
-            {gameState === 'FINISHED' && (
-              <div className="bg-gradient-to-br from-[#7a0000] to-black border border-[#a30000] text-white p-6 rounded-3xl shadow-2xl space-y-4 text-center">
-                <div className="text-5xl">🏆</div>
-                <h2 className="font-black text-xl">30-Day Arena Finished!</h2>
-                <p className="text-rose-200/80 text-xs">Your final standing portfolio net worth:</p>
-                <div className="text-2xl font-black font-mono bg-black/50 p-3 rounded-2xl border border-white/10">
-                  ₹{Math.round(currentTotalGameVal).toLocaleString('en-IN')}
-                </div>
-                <button 
-                  onClick={resetChallengeArena}
-                  className="w-full py-3.5 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-xs tracking-wider rounded-2xl shadow-lg transition-all cursor-pointer"
-                >
-                  Start New Session
-                </button>
-              </div>
-            )}
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* 🎮 LOBBY LAUNCH OVERLAY */}
-      {gameState === 'LOBBY' && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-lg z-30 flex items-center justify-center p-4">
-          <div className="bg-[#0f0505] border border-[#2b0808] max-w-lg w-full rounded-3xl p-8 shadow-2xl text-center space-y-6 relative overflow-hidden">
+      {/* 🎮 LOBBY VIEW (CLEAN MINIMAL LAUNCHER CARD ONLY) */}
+      {gameState === 'LOBBY' ? (
+        <div className="min-h-[80vh] flex items-center justify-center p-4">
+          <div className="bg-[#0f0505] border border-[#2b0808] max-w-lg w-full rounded-3xl p-8 shadow-2xl text-center space-y-6 relative overflow-hidden animate-fadeIn">
             
             {/* LOBBY CLOSE (X) BUTTON */}
             <button
               type="button"
               onClick={() => router.push('/')}
-              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] hover:border-[#ff3333] hover:bg-[#7a0000] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-all cursor-pointer z-20"
+              title="Close & Return Home"
             >
               ✕
             </button>
 
-            <div className="text-6xl animate-bounce">⚡</div>
+            <div className="text-6xl animate-bounce pt-2">⚡</div>
             <div className="space-y-2">
               <span className="text-xs font-black uppercase tracking-widest text-[#ff3333] bg-[#1a0808] border border-[#2b0808] px-3 py-1 rounded-md">
                 30-Day Speed Trading
@@ -503,6 +319,190 @@ export default function ArenaPage() {
               Start Arena Match
             </button>
           </div>
+        </div>
+      ) : (
+        /* 🚀 MAIN ARENA GAMEPLAY VIEW (RUNNING or FINISHED) */
+        <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
+          
+          {/* HEADER BAR */}
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4 relative z-40">
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                <span className="text-[#ff3333]">30-DAY</span> VOLATILITY ARENA ⚡
+              </h1>
+              <p className="text-slate-400 text-xs mt-1 font-medium">Click any card to inspect company stats, live charts, and place instant trades.</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-2xl shadow-xl w-fit">
+                <div className="text-xs">
+                  <span className="text-slate-400 block text-[10px] uppercase font-black">Timeline Progress</span>
+                  <span className="font-mono font-black text-white">Day {day} / 30</span>
+                </div>
+                <div className="h-6 w-[1px] bg-[#2b0808]" />
+                <div className="text-xs">
+                  <span className="text-slate-400 block text-[10px] uppercase font-black">Next Tick</span>
+                  <span className="font-mono font-black text-[#ff3333]">{autoSecsLeft}s</span>
+                </div>
+              </div>
+
+              {/* HEADER EXIT / CLOSE (X) BUTTON */}
+              <button
+                type="button"
+                onClick={handleHeaderCloseClick}
+                title="Close Arena & Return Home"
+                className="h-10 w-10 rounded-2xl bg-[#1a0808] hover:bg-[#7a0000] border border-[#2b0808] hover:border-[#ff3333] text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition-all shadow-lg active:scale-95 cursor-pointer z-50"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* EVENT BROADCAST */}
+          {activeEvent && (
+            <div className={`p-4 rounded-2xl border text-xs font-black shadow-lg animate-bounce ${activeEvent.col}`}>
+              {activeEvent.msg}
+            </div>
+          )}
+
+          {/* METRICS DASHBOARD */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+              <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Arena Cash</span>
+              <div className="text-lg font-black mt-1 font-mono text-white">₹{gameBalance.toLocaleString('en-IN')}</div>
+            </div>
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+              <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Holdings Worth</span>
+              <div className="text-lg font-black mt-1 font-mono text-white">₹{getGameHoldingsValue().toLocaleString('en-IN')}</div>
+            </div>
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+              <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Total Net Worth</span>
+              <div className="text-lg font-black mt-1 font-mono text-[#ff3333]">₹{currentTotalGameVal.toLocaleString('en-IN')}</div>
+            </div>
+            <div className="bg-[#0f0505] border border-[#2b0808] rounded-2xl p-4 shadow-xl">
+              <span className="text-[10px] font-black tracking-wider text-slate-500 uppercase">Net Profit / Loss</span>
+              <div className={`text-lg font-black mt-1 font-mono ${(currentTotalGameVal - START_GAME) >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+                ₹{(currentTotalGameVal - START_GAME).toLocaleString('en-IN')}
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN LAYOUT: COMPACT CARDS GRID + LEADERBOARD */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* COMPACT CARDS GRID */}
+            <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {gameStocks.map(st => {
+                const hold = gameHoldings[st.sym];
+                const isUp = !st.changePct.startsWith('-');
+
+                return (
+                  <div 
+                    key={st.sym}
+                    onClick={() => {
+                      if (gameState === 'RUNNING') {
+                        setSelectedStockModal(st.sym);
+                        setTradeQty(1);
+                      }
+                    }}
+                    className="bg-[#0f0505] border border-[#2b0808] hover:border-[#7a0000] p-3 rounded-2xl shadow-lg transition-all duration-200 hover:scale-[1.02] cursor-pointer group flex flex-col justify-between space-y-2 relative overflow-hidden"
+                  >
+                    <div className="flex justify-between items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <div className="text-lg p-1.5 bg-[#1a0808] border border-[#2b0808] rounded-xl group-hover:scale-105 transition-transform">
+                          {st.icon}
+                        </div>
+                        <div>
+                          <h3 className="font-black text-white text-xs group-hover:text-[#ff3333] transition-colors">{st.sym}</h3>
+                          <p className="text-[10px] text-slate-400 font-medium truncate max-w-[70px]">{st.name}</p>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-lg font-mono border ${isUp ? 'text-emerald-400 bg-emerald-950/40 border-emerald-900/60' : 'text-rose-400 bg-rose-950/40 border-rose-900/60'}`}>
+                        {st.changePct}
+                      </span>
+                    </div>
+
+                    {/* MINI SPARKLINE TREND GRAPH */}
+                    <div className="h-6 w-full flex items-end gap-1 pt-1">
+                      {st.history.map((val, idx) => {
+                        const max = Math.max(...st.history);
+                        const min = Math.min(...st.history);
+                        const heightPct = max === min ? 50 : Math.max(15, ((val - min) / (max - min)) * 100);
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`flex-1 rounded-t transition-all ${isUp ? 'bg-emerald-500/60 group-hover:bg-emerald-400' : 'bg-rose-500/60 group-hover:bg-rose-400'}`}
+                            style={{ height: `${heightPct}%` }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1 border-t border-[#2b0808] text-[10px]">
+                      <div>
+                        <span className="font-mono font-black text-white">₹{st.price.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-black text-[#ff3333]">
+                          {hold ? `${hold.shares} U` : '0'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* LEADERBOARD SIDEBAR */}
+            <div className="space-y-4">
+              <div className="bg-[#0f0505] border border-[#2b0808] rounded-3xl p-5 shadow-xl space-y-4">
+                <h3 className="font-black text-xs uppercase tracking-wider text-slate-400 border-b border-[#2b0808] pb-3 flex items-center justify-between">
+                  <span>Arena Standings</span>
+                  <span className="text-[#ff3333]">Season 1</span>
+                </h3>
+                <div className="space-y-2.5">
+                  {sortedLeaderboard.map((player, idx) => (
+                    <div 
+                      key={player.name}
+                      className={`flex justify-between items-center text-xs p-3 rounded-2xl border ${player.name.includes('You') ? 'bg-[#1a0808] border-[#7a0000] font-black text-[#ff3333]' : 'border-[#2b0808] bg-[#0f0505] text-slate-300'}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono font-black text-slate-500 text-sm">#{idx + 1}</span>
+                        <span>{player.name}</span>
+                      </div>
+                      <span className="font-mono font-bold text-white">₹{Math.round(player.score).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={resetChallengeArena}
+                  className="w-full text-center py-3 border border-[#2b0808] hover:border-rose-900/60 text-slate-400 hover:text-rose-400 text-xs font-bold bg-[#1a0808] rounded-2xl transition-all cursor-pointer"
+                >
+                  Reset Arena Game
+                </button>
+              </div>
+
+              {gameState === 'FINISHED' && (
+                <div className="bg-gradient-to-br from-[#7a0000] to-black border border-[#a30000] text-white p-6 rounded-3xl shadow-2xl space-y-4 text-center">
+                  <div className="text-5xl">🏆</div>
+                  <h2 className="font-black text-xl">30-Day Arena Finished!</h2>
+                  <p className="text-rose-200/80 text-xs">Your final standing portfolio net worth:</p>
+                  <div className="text-2xl font-black font-mono bg-black/50 p-3 rounded-2xl border border-white/10">
+                    ₹{Math.round(currentTotalGameVal).toLocaleString('en-IN')}
+                  </div>
+                  <button 
+                    onClick={resetChallengeArena}
+                    className="w-full py-3.5 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-xs tracking-wider rounded-2xl shadow-lg transition-all cursor-pointer"
+                  >
+                    Start New Session
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+
         </div>
       )}
 
