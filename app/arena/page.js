@@ -87,6 +87,16 @@ export default function ArenaPage() {
     { name: 'PaperTrader 📄', score: 9200 },
   ];
 
+  // HANDLE HEADER CLOSE BUTTON (X) CLICK
+  const handleHeaderCloseClick = () => {
+    if (gameState === 'RUNNING') {
+      setPendingHref('/');
+      setShowExitModal(true);
+    } else {
+      router.push('/');
+    }
+  };
+
   // 1. INITIATE COUNTDOWN ENGINE
   const startCountdownSequence = () => {
     setGameState('COUNTDOWN');
@@ -142,6 +152,8 @@ export default function ArenaPage() {
     setGameState('LOBBY');
     if (pendingHref) {
       router.push(pendingHref);
+    } else {
+      router.push('/');
     }
   };
 
@@ -277,8 +289,8 @@ export default function ArenaPage() {
 
       <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
         
-        {/* HEADER BAR */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
+        {/* HEADER BAR WITH CLOSE (X) BUTTON */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4 relative">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <span className="text-[#ff3333]">30-DAY</span> VOLATILITY ARENA ⚡
@@ -286,16 +298,27 @@ export default function ArenaPage() {
             <p className="text-slate-400 text-xs mt-1 font-medium">Click any card to inspect company stats, live charts, and place instant trades.</p>
           </div>
 
-          <div className="flex items-center gap-3 bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-2xl shadow-xl w-fit">
-            <div className="text-xs">
-              <span className="text-slate-400 block text-[10px] uppercase font-black">Timeline Progress</span>
-              <span className="font-mono font-black text-white">Day {day} / 30</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-2xl shadow-xl w-fit">
+              <div className="text-xs">
+                <span className="text-slate-400 block text-[10px] uppercase font-black">Timeline Progress</span>
+                <span className="font-mono font-black text-white">Day {day} / 30</span>
+              </div>
+              <div className="h-6 w-[1px] bg-[#2b0808]" />
+              <div className="text-xs">
+                <span className="text-slate-400 block text-[10px] uppercase font-black">Next Tick</span>
+                <span className="font-mono font-black text-[#ff3333]">{autoSecsLeft}s</span>
+              </div>
             </div>
-            <div className="h-6 w-[1px] bg-[#2b0808]" />
-            <div className="text-xs">
-              <span className="text-slate-400 block text-[10px] uppercase font-black">Next Tick</span>
-              <span className="font-mono font-black text-[#ff3333]">{autoSecsLeft}s</span>
-            </div>
+
+            {/* HEADER EXIT / CLOSE (X) BUTTON */}
+            <button
+              onClick={handleHeaderCloseClick}
+              title="Close Arena & Return Home"
+              className="h-10 w-10 rounded-2xl bg-[#1a0808] hover:bg-[#7a0000] border border-[#2b0808] hover:border-[#ff3333] text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition-all shadow-lg active:scale-95"
+            >
+              ✕
+            </button>
           </div>
         </div>
 
@@ -450,6 +473,15 @@ export default function ArenaPage() {
       {gameState === 'LOBBY' && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 flex items-center justify-center p-4">
           <div className="bg-[#0f0505] border border-[#2b0808] max-w-lg w-full rounded-3xl p-8 shadow-2xl text-center space-y-6 relative overflow-hidden">
+            
+            {/* LOBBY CLOSE (X) BUTTON */}
+            <button
+              onClick={() => router.push('/')}
+              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+
             <div className="text-6xl animate-bounce">⚡</div>
             <div className="space-y-2">
               <span className="text-xs font-black uppercase tracking-widest text-[#ff3333] bg-[#1a0808] border border-[#2b0808] px-3 py-1 rounded-md">
@@ -501,7 +533,10 @@ export default function ArenaPage() {
                 Forfeit & Leave
               </button>
               <button 
-                onClick={() => setShowExitModal(false)}
+                onClick={() => {
+                  setShowExitModal(false);
+                  setPendingHref(null);
+                }}
                 className="flex-1 bg-[#1a0808] border border-[#2b0808] text-slate-300 font-bold text-xs uppercase py-3 rounded-xl transition-all"
               >
                 Keep Playing
