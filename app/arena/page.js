@@ -87,8 +87,10 @@ export default function ArenaPage() {
     { name: 'PaperTrader 📄', score: 9200 },
   ];
 
-  // HANDLE HEADER CLOSE BUTTON (X) CLICK
-  const handleHeaderCloseClick = () => {
+  // DIRECT HOME ROUTING FUNCTION FOR X BUTTON
+  const handleExitToHome = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (gameState === 'RUNNING') {
       setPendingHref('/');
       setShowExitModal(true);
@@ -289,8 +291,8 @@ export default function ArenaPage() {
 
       <div className="max-w-[1240px] mx-auto px-4 pt-4 space-y-6">
         
-        {/* HEADER BAR WITH CLOSE (X) BUTTON */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4 relative">
+        {/* HEADER BAR WITH ELEVATED Z-INDEX TO PREVENT OVERLAY BLOCKING */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4 relative z-40">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <span className="text-[#ff3333]">30-DAY</span> VOLATILITY ARENA ⚡
@@ -311,11 +313,12 @@ export default function ArenaPage() {
               </div>
             </div>
 
-            {/* HEADER EXIT / CLOSE (X) BUTTON */}
+            {/* CLICKABLE HEADER EXIT BUTTON */}
             <button
-              onClick={handleHeaderCloseClick}
+              type="button"
+              onClick={handleExitToHome}
               title="Close Arena & Return Home"
-              className="h-10 w-10 rounded-2xl bg-[#1a0808] hover:bg-[#7a0000] border border-[#2b0808] hover:border-[#ff3333] text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition-all shadow-lg active:scale-95"
+              className="h-10 w-10 rounded-2xl bg-[#1a0808] hover:bg-[#7a0000] border border-[#2b0808] hover:border-[#ff3333] text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition-all shadow-lg active:scale-95 cursor-pointer z-50"
             >
               ✕
             </button>
@@ -441,7 +444,7 @@ export default function ArenaPage() {
 
               <button 
                 onClick={resetChallengeArena}
-                className="w-full text-center py-3 border border-[#2b0808] hover:border-rose-900/60 text-slate-400 hover:text-rose-400 text-xs font-bold bg-[#1a0808] rounded-2xl transition-all"
+                className="w-full text-center py-3 border border-[#2b0808] hover:border-rose-900/60 text-slate-400 hover:text-rose-400 text-xs font-bold bg-[#1a0808] rounded-2xl transition-all cursor-pointer"
               >
                 Reset Arena Game
               </button>
@@ -457,7 +460,7 @@ export default function ArenaPage() {
                 </div>
                 <button 
                   onClick={resetChallengeArena}
-                  className="w-full py-3.5 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-xs tracking-wider rounded-2xl shadow-lg transition-all"
+                  className="w-full py-3.5 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-xs tracking-wider rounded-2xl shadow-lg transition-all cursor-pointer"
                 >
                   Start New Session
                 </button>
@@ -471,13 +474,14 @@ export default function ArenaPage() {
 
       {/* 🎮 LOBBY LAUNCH OVERLAY */}
       {gameState === 'LOBBY' && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-lg z-30 flex items-center justify-center p-4">
           <div className="bg-[#0f0505] border border-[#2b0808] max-w-lg w-full rounded-3xl p-8 shadow-2xl text-center space-y-6 relative overflow-hidden">
             
             {/* LOBBY CLOSE (X) BUTTON */}
             <button
+              type="button"
               onClick={() => router.push('/')}
-              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               ✕
             </button>
@@ -494,7 +498,7 @@ export default function ArenaPage() {
             </div>
             <button 
               onClick={startCountdownSequence}
-              className="w-full py-4 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-sm tracking-wider rounded-2xl shadow-2xl transition-all active:scale-95"
+              className="w-full py-4 bg-[#ff3333] hover:bg-[#dc2626] text-white font-black uppercase text-sm tracking-wider rounded-2xl shadow-2xl transition-all active:scale-95 cursor-pointer"
             >
               Start Arena Match
             </button>
@@ -528,7 +532,7 @@ export default function ArenaPage() {
             <div className="flex gap-3">
               <button 
                 onClick={confirmExitAndNavigate}
-                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase py-3 rounded-xl transition-all"
+                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase py-3 rounded-xl transition-all cursor-pointer"
               >
                 Forfeit & Leave
               </button>
@@ -537,7 +541,7 @@ export default function ArenaPage() {
                   setShowExitModal(false);
                   setPendingHref(null);
                 }}
-                className="flex-1 bg-[#1a0808] border border-[#2b0808] text-slate-300 font-bold text-xs uppercase py-3 rounded-xl transition-all"
+                className="flex-1 bg-[#1a0808] border border-[#2b0808] text-slate-300 font-bold text-xs uppercase py-3 rounded-xl transition-all cursor-pointer"
               >
                 Keep Playing
               </button>
@@ -554,7 +558,7 @@ export default function ArenaPage() {
             {/* CLOSE BUTTON */}
             <button 
               onClick={() => setSelectedStockModal(null)}
-              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              className="absolute top-5 right-5 h-8 w-8 bg-[#1a0808] border border-[#2b0808] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               ✕
             </button>
@@ -604,13 +608,13 @@ export default function ArenaPage() {
                 />
                 <button 
                   onClick={() => setTradeQty(5)} 
-                  className="bg-[#1a0808] border border-[#2b0808] hover:border-[#7a0000] text-xs font-bold px-3.5 rounded-2xl text-slate-300"
+                  className="bg-[#1a0808] border border-[#2b0808] hover:border-[#7a0000] text-xs font-bold px-3.5 rounded-2xl text-slate-300 cursor-pointer"
                 >
                   5x
                 </button>
                 <button 
                   onClick={() => setTradeQty(10)} 
-                  className="bg-[#1a0808] border border-[#2b0808] hover:border-[#7a0000] text-xs font-bold px-3.5 rounded-2xl text-slate-300"
+                  className="bg-[#1a0808] border border-[#2b0808] hover:border-[#7a0000] text-xs font-bold px-3.5 rounded-2xl text-slate-300 cursor-pointer"
                 >
                   10x
                 </button>
@@ -619,7 +623,7 @@ export default function ArenaPage() {
                     const maxPossible = Math.floor(gameBalance / activeModalStockData.price);
                     setTradeQty(Math.max(1, maxPossible));
                   }} 
-                  className="bg-[#1a0808] border border-[#2b0808] hover:border-[#7a0000] text-xs font-bold px-3.5 rounded-2xl text-[#ff3333]"
+                  className="bg-[#1a0808] border border-[#2b0808] hover:border-[#7a0000] text-xs font-bold px-3.5 rounded-2xl text-[#ff3333] cursor-pointer"
                 >
                   MAX
                 </button>
@@ -631,14 +635,14 @@ export default function ArenaPage() {
               <button 
                 onClick={() => handleGameTrade(activeModalStockData.sym, 'BUY', tradeQty)}
                 disabled={gameState !== 'RUNNING'}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-40"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
               >
                 Buy Asset
               </button>
               <button 
                 onClick={() => handleGameTrade(activeModalStockData.sym, 'SELL', tradeQty)}
                 disabled={gameState !== 'RUNNING' || !activeModalHolding}
-                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-40"
+                className="flex-1 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
               >
                 Sell Asset
               </button>
