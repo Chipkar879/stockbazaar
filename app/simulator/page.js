@@ -3,14 +3,15 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabase';
 
-// ALL TICKERS STANDARDIZED TO VERIFIED BSE FEEDS FOR 100% PRICE + CHART SYNC
+// ALL SYMBOLS STANDARDIZED TO VERIFIED BSE FEEDS
 const STATIC_COMPANY_REGISTRY = [
-  // COMMODITIES & BENCHMARK ETFS (100% WORKING ON BOTH SCANNER & TV CHART)
+  // COMMODITIES & METALS
   { sym: 'GOLDBEES', name: 'Nippon India ETF Gold BeES', tv: 'BSE:GOLDBEES', sector: 'Commodities / Gold ETF', category: 'Crypto & ETFs', cap: '₹12.4K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
   { sym: 'SILVERBEES', name: 'Nippon India Silver ETF', tv: 'BSE:SILVERBEES', sector: 'Commodities / Silver ETF', category: 'Crypto & ETFs', cap: '₹3.8K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
-  { sym: 'NIFTYBEES', name: 'Nippon India Nifty 50 ETF', tv: 'BSE:NIFTYBEES', sector: 'Benchmark Index ETF', category: 'Crypto & ETFs', cap: '₹28.5K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
-  { sym: 'BANKBEES', name: 'Nippon India Bank ETF', tv: 'BSE:BANKBEES', sector: 'Banking Sector ETF', category: 'Crypto & ETFs', cap: '₹14.2K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
-  { sym: 'MON100', name: 'Motilal Oswal Nasdaq 100 ETF', tv: 'BSE:MON100', sector: 'Global Tech Index ETF', category: 'Crypto & ETFs', cap: '₹7.1K Cr', pe: 'N/A', eps: 'N/A', div: '0.00%' },
+  { sym: 'TATASTEEL', name: 'Tata Steel Ltd.', tv: 'BSE:TATASTEEL', sector: 'Metals & Mining', category: 'Crypto & ETFs', cap: '₹1.9L Cr', pe: 42.1, eps: 3.8, div: '2.40%' },
+  { sym: 'HINDALCO', name: 'Hindalco Industries Ltd.', tv: 'BSE:HINDALCO', sector: 'Aluminum & Copper', category: 'Crypto & ETFs', cap: '₹1.4L Cr', pe: 14.2, eps: 45.1, div: '0.55%' },
+  { sym: 'VEDL', name: 'Vedanta Limited', tv: 'BSE:VEDL', sector: 'Diversified Metals', category: 'Crypto & ETFs', cap: '₹1.6L Cr', pe: 11.5, eps: 38.0, div: '6.50%' },
+  { sym: 'COALINDIA', name: 'Coal India Ltd.', tv: 'BSE:COALINDIA', sector: 'Energy & Mining', category: 'Energy & Macro', cap: '₹2.8L Cr', pe: 7.8, eps: 62.4, div: '5.20%' },
 
   // BANKING & FINANCE
   { sym: 'HDFCBANK', name: 'HDFC Bank Ltd.', tv: 'BSE:HDFCBANK', sector: 'Banking & Finance', category: 'Banking & Finance', cap: '₹5.9L Cr', pe: 15.8, eps: 49.2, div: '1.66%' },
@@ -77,7 +78,7 @@ export default function RealSimulatorPage() {
           setUser(session.user);
           const { data: prof } = await supabase
             .from('profiles')
-            .select('wallet_balance')
+            .select('wallet_balance, net_worth')
             .eq('id', session.user.id)
             .single();
 
@@ -145,6 +146,40 @@ export default function RealSimulatorPage() {
     const interval = setInterval(fetchTradingViewPrices, 3000);
     return () => clearInterval(interval);
   }, [fetchTradingViewPrices]);
+
+  // SAFE HOLDINGS VALUE CALCULATOR
+  const getRealHoldingsValue = useCallback(() => {
+    return Object.values(realHoldings).reduce((sum, h) => {
+      const livePrice = tvPrices[h.sym]?.price;
+      const validPrice = (livePrice && livePrice > 0) ? livePrice : h.avgPrice;
+      return sum + (validPrice * h.shares);
+    }, 0);
+  }, [realHoldings, tvPrices]);
+
+  // AUTO-SYNC NET WORTH TO SUPABASE FOR LEADERBOARD REFLECTION
+  useEffect(() => {
+    if (!user) return;
+
+    const syncNetWorthToSupabase = async () => {
+      const holdingsVal = getRealHoldingsValue();
+      const calculatedNetWorth = Number((realBalance + holdingsVal).toFixed(2));
+
+      try {
+        await supabase
+          .from('profiles')
+          .update({ 
+            wallet_balance: realBalance,
+            net_worth: calculatedNetWorth 
+          })
+          .eq('id', user.id);
+      } catch (err) {
+        console.error("Net worth Leaderboard sync error:", err);
+      }
+    };
+
+    const debounceTimer = setTimeout(syncNetWorthToSupabase, 2000);
+    return () => clearTimeout(debounceTimer);
+  }, [realBalance, realHoldings, tvPrices, user, getRealHoldingsValue]);
 
   // Filter Watchlist Assets by Sector Category
   const filteredAssetsList = useMemo(() => {
@@ -231,13 +266,6 @@ export default function RealSimulatorPage() {
     }
   }, [selectedRealStock, mergedActiveRealStock.tv]);
 
-  const getRealHoldingsValue = () => {
-    return Object.values(realHoldings).reduce((sum, h) => {
-      const matchPrice = tvPrices[h.sym]?.price || h.avgPrice;
-      return sum + (matchPrice * h.shares);
-    }, 0);
-  };
-
   // STAGE 1: INITIATE ORDER REVIEW
   const initiateOrderReview = (type) => {
     if (!verifyMarketIsActive()) {
@@ -258,7 +286,7 @@ export default function RealSimulatorPage() {
       return;
     }
 
-    const totalCost = livePrice * qty;
+    const totalCost = Number((livePrice * qty).toFixed(2));
 
     if (type === 'BUY') {
       if (realBalance < totalCost) {
@@ -279,8 +307,7 @@ export default function RealSimulatorPage() {
       type,
       qty,
       price: livePrice,
-      totalCost,
-      estimatedMarginLeft: type === 'BUY' ? realBalance - totalCost : realBalance + totalCost
+      totalCost
     });
 
     setOrderStage('REVIEW');
@@ -301,42 +328,68 @@ export default function RealSimulatorPage() {
 
     await new Promise(r => setTimeout(r, 600));
 
-    // STAGE 4: EXECUTE FILL & UPDATE DATABASE PERSISTENCE
-    const { sym, type, qty, price, totalCost } = pendingOrder;
+    // RE-FETCH LATEST LIVE PRICE AT MOMENT OF EXECUTION TO PREVENT STALE PRICE ARBITRAGE
+    const latestPrice = tvPrices[pendingOrder.sym]?.price || pendingOrder.price;
+    const finalTotalCost = Number((latestPrice * pendingOrder.qty).toFixed(2));
+    const { sym, type, qty } = pendingOrder;
 
     let newBalance = realBalance;
     let updatedHoldings = { ...realHoldings };
 
     if (type === 'BUY') {
-      newBalance = Number((realBalance - totalCost).toFixed(2));
+      if (realBalance < finalTotalCost) {
+        alert("Market price shifted! Insufficient margin to complete order.");
+        resetOrderDesk();
+        return;
+      }
+
+      newBalance = Number((realBalance - finalTotalCost).toFixed(2));
       const existing = updatedHoldings[sym];
 
       if (existing) {
-        const newShares = existing.shares + qty;
-        const newAvg = ((existing.avgPrice * existing.shares) + (price * qty)) / newShares;
-        updatedHoldings[sym] = { sym, shares: newShares, avgPrice: newAvg };
+        const newShares = Number((existing.shares + qty).toFixed(4));
+        const newAvg = ((existing.avgPrice * existing.shares) + (latestPrice * qty)) / newShares;
+        updatedHoldings[sym] = { sym, shares: newShares, avgPrice: Number(newAvg.toFixed(2)) };
       } else {
-        updatedHoldings[sym] = { sym, shares: qty, avgPrice: price };
+        updatedHoldings[sym] = { sym, shares: qty, avgPrice: latestPrice };
       }
     } else {
-      newBalance = Number((realBalance + totalCost).toFixed(2));
       const existing = updatedHoldings[sym];
+      if (!existing || existing.shares < qty) {
+        alert("Execution Error: Insufficient shares in portfolio.");
+        resetOrderDesk();
+        return;
+      }
 
-      if (existing.shares === qty) {
+      newBalance = Number((realBalance + finalTotalCost).toFixed(2));
+
+      // FLOATING POINT SAFE DEDUCTION
+      const remainingShares = Number((existing.shares - qty).toFixed(4));
+      if (remainingShares <= 0.0001) {
         delete updatedHoldings[sym];
       } else {
-        updatedHoldings[sym] = { ...existing, shares: existing.shares - qty };
+        updatedHoldings[sym] = { ...existing, shares: remainingShares };
       }
     }
 
     setRealBalance(newBalance);
     setRealHoldings(updatedHoldings);
 
+    // CALCULATE ACCURATE NET WORTH TO WRITE TO SUPABASE LEADERBOARD
+    const holdingsVal = Object.values(updatedHoldings).reduce((sum, h) => {
+      const livePrice = tvPrices[h.sym]?.price || h.avgPrice;
+      return sum + (livePrice * h.shares);
+    }, 0);
+    const finalNetWorth = Number((newBalance + holdingsVal).toFixed(2));
+
     if (user) {
       localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
       await supabase
         .from('profiles')
-        .update({ wallet_balance: newBalance })
+        .update({ 
+          wallet_balance: newBalance,
+          net_worth: finalNetWorth
+        })
         .eq('id', user.id);
     }
 
@@ -346,8 +399,8 @@ export default function RealSimulatorPage() {
       sym,
       type,
       qty,
-      price,
-      totalCost,
+      price: latestPrice,
+      totalCost: finalTotalCost,
       newBalance
     };
 
@@ -374,7 +427,7 @@ export default function RealSimulatorPage() {
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
                 <span className="text-[#ff3333]">PRO</span> MULTI-ASSET SIMULATOR ⚡
               </h1>
-              <p className="text-slate-400 text-xs mt-1 font-medium">Equities, Gold/Silver ETFs, Nifty Index & Heavyweight Bluechips categorized by sectors.</p>
+              <p className="text-slate-400 text-xs mt-1 font-medium">Equities, Gold/Silver ETFs & Commodities synchronized live with Supabase Leaderboards.</p>
             </div>
             <div className="flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400 font-mono shadow-sm w-fit">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live Execution Desk Active
@@ -556,7 +609,7 @@ export default function RealSimulatorPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] text-slate-400 uppercase font-black">Exchange Routing</div>
-                        <div className="text-xs font-bold text-white font-mono">BSE / NSE Spot Market</div>
+                        <div className="text-xs font-bold text-white font-mono">BSE Spot Regular</div>
                       </div>
                     </div>
 
