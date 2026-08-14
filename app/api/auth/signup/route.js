@@ -10,12 +10,16 @@ export async function POST(request) {
   try {
     const { name, email, password, role, schoolCode, specificClassId, documentUrl } = await request.json();
 
-    // 1. Check if student is signing up with a school code that actually exists in 'school_classes'
+    // 1. Check if student is signing up with a valid classroom token in 'school_classes'
     if (role === 'student') {
+      if (!schoolCode) {
+        return NextResponse.json({ error: 'School code is required for student accounts.' }, { status: 400 });
+      }
+
       const { data: codeCheck, error: codeErr } = await supabase
-        .from('school_classes') // ✅ Correct table name
-        .select('school_code')  // ✅ Correct column name
-        .eq('school_code', schoolCode ? schoolCode.toUpperCase() : '')
+        .from('school_classes')
+        .select('school_code')
+        .eq('school_code', schoolCode.toUpperCase())
         .limit(1);
 
       if (codeErr || !codeCheck || codeCheck.length === 0) {
@@ -23,7 +27,7 @@ export async function POST(request) {
       }
     }
 
-    // 2. Register the user into Supabase Auth
+    // 2. Register the user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -34,20 +38,21 @@ export async function POST(request) {
 
     const userId = authData.user.id;
 
-    // 3. Define adaptive defaults for sandbox cash balance limits
-    const initialBalance = (role === 'personal' || role === 'student') ? 50000 : 0;
+    // 3. Define balance and approval defaults
+    const initialBalance = 50000;
     const isTeacherPending = (role === 'teacher') ? 'pending' : 'approved';
     const isStudentApproved = true; 
 
-    // 4. Record details directly into the profiles table
+    // 4. Save EXACT role, school_code, and specific_class_id into 'profiles'
     const { error: profileError } = await supabase.from('profiles').insert([{
       id: userId,
       name,
       email,
-      role,
+      role: role || 'personal', // Saves 'student' or 'teacher' instead of defaulting to personal
       wallet_balance: initialBalance,
       net_worth: initialBalance,
       school_code: schoolCode ? schoolCode.toUpperCase() : null,
+      school_id: schoolCode ? schoolCode.toUpperCase() : null,
       specific_class_id: specificClassId ? String(specificClassId) : null,
       verification_status: isTeacherPending,
       verification_document_url: documentUrl,
