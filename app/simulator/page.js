@@ -69,37 +69,70 @@ export default function RealSimulatorPage() {
 
   const chartContainerRef = useRef(null);
 
-  // Sync Supabase session & profile wallet
+  // Sync Supabase session & local storage atomically
   useEffect(() => {
     const syncUserSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user) {
           setUser(session.user);
+          const userId = session.user.id;
+
+          // Load holdings from LocalStorage first
+          const savedHoldings = localStorage.getItem(`bullrun_holdings_${userId}`);
+          let parsedHoldings = {};
+          if (savedHoldings) {
+            parsedHoldings = JSON.parse(savedHoldings);
+            setRealHoldings(parsedHoldings);
+          }
+
+          // Fetch profile balance from Supabase
           const { data: prof } = await supabase
             .from('profiles')
             .select('wallet_balance, net_worth')
-            .eq('id', session.user.id)
+            .eq('id', userId)
             .single();
 
           if (prof && prof.wallet_balance !== undefined && prof.wallet_balance !== null) {
             setRealBalance(prof.wallet_balance);
+            localStorage.setItem(`bullrun_wallet_${userId}`, prof.wallet_balance.toString());
+          } else {
+            // Check local storage fallback if Supabase field is null
+            const cachedWallet = localStorage.getItem(`bullrun_wallet_${userId}`);
+            if (cachedWallet !== null) {
+              setRealBalance(parseFloat(cachedWallet));
+            }
+          }
+        } else {
+          // GUEST / UNAUTHENTICATED PERSISTENCE FIX
+          const guestWallet = localStorage.getItem('bullrun_guest_wallet');
+          const guestHoldings = localStorage.getItem('bullrun_guest_holdings');
+
+          if (guestHoldings) {
+            setRealHoldings(JSON.parse(guestHoldings));
           }
 
-          const savedHoldings = localStorage.getItem(`bullrun_holdings_${session.user.id}`);
-          if (savedHoldings) {
-            setRealHoldings(JSON.parse(savedHoldings));
+          if (guestWallet !== null) {
+            setRealBalance(parseFloat(guestWallet));
+          } else if (guestHoldings) {
+            // Deduce remaining balance if holdings exist but wallet was lost
+            const parsedGuestHoldings = JSON.parse(guestHoldings);
+            const totalSpent = Object.values(parsedGuestHoldings).reduce((sum, h) => sum + (h.avgPrice * h.shares), 0);
+            const adjustedWallet = Math.max(0, START_REAL - totalSpent);
+            setRealBalance(adjustedWallet);
+            localStorage.setItem('bullrun_guest_wallet', adjustedWallet.toString());
           }
         }
       } catch (err) {
-        console.error("Supabase user sync fault:", err);
+        console.error("User session & balance sync error:", err);
       }
     };
 
     syncUserSession();
   }, []);
 
-  // Fetch prices via server proxy
+  // Fetch live prices via TradingView server proxy
   const fetchTradingViewPrices = useCallback(async () => {
     try {
       const tickers = STATIC_COMPANY_REGISTRY.map(s => s.tv);
@@ -156,7 +189,7 @@ export default function RealSimulatorPage() {
     }, 0);
   }, [realHoldings, tvPrices]);
 
-  // AUTO-SYNC NET WORTH TO SUPABASE FOR LEADERBOARD REFLECTION
+  // AUTO-SYNC NET WORTH TO SUPABASE FOR LEADERBOARD ACCURACY
   useEffect(() => {
     if (!user) return;
 
@@ -290,7 +323,7 @@ export default function RealSimulatorPage() {
 
     if (type === 'BUY') {
       if (realBalance < totalCost) {
-        alert("Insufficient funds in your account!");
+        alert("Insufficient cash balance in your account!");
         return;
       }
     } else {
@@ -372,25 +405,33 @@ export default function RealSimulatorPage() {
       }
     }
 
+    // UPDATE REACT STATE
     setRealBalance(newBalance);
     setRealHoldings(updatedHoldings);
 
-    // CALCULATE ACCURATE NET WORTH TO WRITE TO SUPABASE LEADERBOARD
-    const holdingsVal = Object.values(updatedHoldings).reduce((sum, h) => {
-      const livePrice = tvPrices[h.sym]?.price || h.avgPrice;
-      return sum + (livePrice * h.shares);
-    }, 0);
-    const finalNetWorth = Number((newBalance + holdingsVal).toFixed(2));
-
+    // ATOMIC PERSISTENCE FIX: SAVE BOTH WALLET & HOLDINGS TOGETHER
     if (user) {
-      localStorage.setItem(`bullrun_holdings_${user.id}`, JSON.stringify(updatedHoldings));
+      const userId = user.id;
+      localStorage.setItem(`bullrun_wallet_${userId}`, newBalance.toString());
+      localStorage.setItem(`bullrun_holdings_${userId}`, JSON.stringify(updatedHoldings));
+
+      const holdingsVal = Object.values(updatedHoldings).reduce((sum, h) => {
+        const livePrice = tvPrices[h.sym]?.price || h.avgPrice;
+        return sum + (livePrice * h.shares);
+      }, 0);
+      const finalNetWorth = Number((newBalance + holdingsVal).toFixed(2));
+
       await supabase
         .from('profiles')
         .update({ 
           wallet_balance: newBalance,
           net_worth: finalNetWorth
         })
-        .eq('id', user.id);
+        .eq('id', userId);
+    } else {
+      // GUEST MODE LOCAL STORAGE PERSISTENCE
+      localStorage.setItem('bullrun_guest_wallet', newBalance.toString());
+      localStorage.setItem('bullrun_guest_holdings', JSON.stringify(updatedHoldings));
     }
 
     const receipt = {
@@ -425,7 +466,7 @@ export default function RealSimulatorPage() {
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-[#2b0808] pb-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                <span className="text-[#ff3333]">PRO</span> MULTI-ASSET SIMULATOR ⚡
+                <span className="text-[#ff3333]">PRO</span> MULTI-ASSET SIMULATOR
               </h1>
               <p className="text-slate-400 text-xs mt-1 font-medium">Equities, Gold/Silver ETFs & Commodities synchronized live with Supabase Leaderboards.</p>
             </div>
@@ -562,13 +603,13 @@ export default function RealSimulatorPage() {
                       <div className="flex gap-3 pt-1">
                         <button 
                           onClick={() => initiateOrderReview('BUY')}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs uppercase font-black tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-95"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs uppercase font-black tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                           Buy Asset
                         </button>
                         <button 
                           onClick={() => initiateOrderReview('SELL')}
-                          className="flex-1 bg-rose-700 hover:bg-rose-800 text-white text-xs uppercase font-black tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-95"
+                          className="flex-1 bg-rose-700 hover:bg-rose-800 text-white text-xs uppercase font-black tracking-wider py-3.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                           Sell Asset
                         </button>
@@ -635,13 +676,13 @@ export default function RealSimulatorPage() {
                     <div className="flex flex-col sm:flex-row gap-3 pt-1">
                       <button 
                         onClick={processAndExecuteOrder}
-                        className={`flex-1 ${pendingOrder.type === 'BUY' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-700 hover:bg-rose-800'} text-white text-xs font-black uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-95`}
+                        className={`flex-1 ${pendingOrder.type === 'BUY' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-700 hover:bg-rose-800'} text-white text-xs font-black uppercase tracking-wider py-3.5 rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer`}
                       >
                         Submit Order to Market
                       </button>
                       <button 
                         onClick={resetOrderDesk}
-                        className="bg-[#1a0808] hover:bg-[#2b0808] border border-[#2b0808] text-slate-300 text-xs font-bold uppercase tracking-wider px-6 py-3.5 rounded-xl transition-all"
+                        className="bg-[#1a0808] hover:bg-[#2b0808] border border-[#2b0808] text-slate-300 text-xs font-bold uppercase tracking-wider px-6 py-3.5 rounded-xl transition-all cursor-pointer"
                       >
                         Cancel Ticket
                       </button>
@@ -697,7 +738,7 @@ export default function RealSimulatorPage() {
                       <span className="text-xs text-slate-400">Asset units have been credited to your portfolio.</span>
                       <button 
                         onClick={resetOrderDesk}
-                        className="bg-[#ff3333] hover:bg-[#dc2626] text-white text-xs font-black uppercase tracking-wider px-6 py-2.5 rounded-xl shadow-md transition-all"
+                        className="bg-[#ff3333] hover:bg-[#dc2626] text-white text-xs font-black uppercase tracking-wider px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer"
                       >
                         Done / Place Another Order
                       </button>

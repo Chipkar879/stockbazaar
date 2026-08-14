@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // DYNAMIC LESSON CONTENT FORMATTER
 function FormattedLessonContent({ content }) {
@@ -145,6 +145,10 @@ export default function InteractiveCourseWrapper({ initialTracks = [] }) {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
 
+  // SCROLL CONTAINER REFS
+  const trackScrollRef = useRef(null);
+  const submodScrollRefs = useRef({});
+
   useEffect(() => {
     try {
       const savedProgress = localStorage.getItem('bullrun_module_progress');
@@ -224,17 +228,29 @@ export default function InteractiveCourseWrapper({ initialTracks = [] }) {
     return completedSubmodules.includes(allSubmodules[index - 1]?.id);
   };
 
-  // STRICT TRACK UNLOCK LOGIC FIX
   const isTrackUnlocked = (trackIdx) => {
     if (trackIdx === 0) return true;
     const prevTrack = initialTracks[trackIdx - 1];
     const prevTrackSubmods = (prevTrack?.modules || []).flatMap(m => m.submodules || []);
     
-    // Lock track if previous track has no submodules or files loaded yet
     if (!prevTrackSubmods || prevTrackSubmods.length === 0) return false;
-    
-    // Require ALL submodules in previous track to be completed
     return prevTrackSubmods.every(sm => completedSubmodules.includes(sm.id));
+  };
+
+  // SCROLL FUNCTIONS
+  const scrollTracks = (direction) => {
+    if (trackScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -350 : 350;
+      trackScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const scrollSubmodules = (modId, direction) => {
+    const targetRef = submodScrollRefs.current[modId];
+    if (targetRef) {
+      const scrollAmount = direction === 'left' ? -320 : 320;
+      targetRef.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -268,61 +284,88 @@ export default function InteractiveCourseWrapper({ initialTracks = [] }) {
         </div>
       </div>
 
-      {/* 1. TRACK SELECTOR CARDS */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {initialTracks.map((track, idx) => {
-          const unlocked = isTrackUnlocked(idx);
-          const isSelected = selectedTrackId === track.id;
+      {/* 1. HORIZONTAL SCROLLABLE TRACK CARDS WITH ARROWS BEFORE CARD 01 & AFTER CARD 04 */}
+      <div className="relative flex items-center">
+        
+        {/* Left Arrow Button (Placed before Mod 1) */}
+        <button
+          onClick={() => scrollTracks('left')}
+          className="mr-3 shrink-0 w-10 h-10 rounded-full bg-[#1a0808] border border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-white font-black flex items-center justify-center shadow-xl transition cursor-pointer active:scale-95"
+          aria-label="Scroll Tracks Left"
+        >
+          ◀
+        </button>
 
-          return (
-            <div
-              key={track.id}
-              onClick={() => unlocked && handleTrackCardClick(track.id)}
-              className={`p-6 rounded-3xl border transition-all duration-300 select-none text-left relative overflow-hidden group ${
-                unlocked 
-                  ? isSelected
-                    ? 'bg-gradient-to-br from-[#7a0000] via-[#4a0000] to-black border-[#ff3333] text-white shadow-[0_0_30px_rgba(255,51,51,0.3)] scale-[1.02] cursor-pointer'
-                    : 'bg-[#0f0505] border-[#2b0808] text-slate-200 shadow-xl hover:border-[#ff3333]/60 hover:bg-[#1a0808] cursor-pointer hover:scale-[1.01]'
-                  : 'bg-[#0f0505]/40 border-[#2b0808] opacity-40 cursor-not-allowed'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className={`font-mono font-black text-3xl ${isSelected ? 'text-rose-200' : 'text-[#ff3333]'}`}>
-                  0{track.trackNumber || idx + 1}
-                </span>
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl font-mono ${
-                  isSelected 
-                    ? 'bg-[#ff3333] text-white shadow-md' 
-                    : 'bg-[#1a0808] border border-[#2b0808] text-slate-400'
-                }`}>
-                  {track.level}
-                </span>
+        {/* Horizontal Track Scroll Container */}
+        <div 
+          ref={trackScrollRef}
+          className="flex gap-6 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth flex-1"
+        >
+          {initialTracks.map((track, idx) => {
+            const unlocked = isTrackUnlocked(idx);
+            const isSelected = selectedTrackId === track.id;
+
+            return (
+              <div
+                key={track.id}
+                onClick={() => unlocked && handleTrackCardClick(track.id)}
+                className={`min-w-[280px] sm:min-w-[310px] max-w-[340px] p-6 rounded-3xl border transition-all duration-300 select-none text-left relative overflow-hidden group flex-shrink-0 flex flex-col justify-between ${
+                  unlocked 
+                    ? isSelected
+                      ? 'bg-gradient-to-br from-[#7a0000] via-[#4a0000] to-black border-[#ff3333] text-white shadow-[0_0_30px_rgba(255,51,51,0.3)] scale-[1.02] cursor-pointer'
+                      : 'bg-[#0f0505] border-[#2b0808] text-slate-200 shadow-xl hover:border-[#ff3333]/60 hover:bg-[#1a0808] cursor-pointer hover:scale-[1.01]'
+                    : 'bg-[#0f0505]/40 border-[#2b0808] opacity-40 cursor-not-allowed'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`font-mono font-black text-3xl ${isSelected ? 'text-rose-200' : 'text-[#ff3333]'}`}>
+                      0{track.trackNumber || idx + 1}
+                    </span>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl font-mono ${
+                      isSelected 
+                        ? 'bg-[#ff3333] text-white shadow-md' 
+                        : 'bg-[#1a0808] border border-[#2b0808] text-slate-400'
+                    }`}>
+                      {track.level}
+                    </span>
+                  </div>
+
+                  <h2 className="font-black text-lg tracking-tight text-white group-hover:text-[#ff3333] transition-colors">
+                    {track.title}
+                  </h2>
+                  <p className={`text-xs mt-2 leading-relaxed ${isSelected ? 'text-rose-100/90' : 'text-slate-400'}`}>
+                    {track.description}
+                  </p>
+                </div>
+                
+                <div className="mt-5 pt-3 border-t border-white/10 flex justify-between items-center text-[10px] font-black font-mono">
+                  {unlocked ? (
+                    <span className={isSelected ? 'text-rose-200 animate-pulse' : 'text-[#ff3333]'}>
+                      {isSelected ? '▼ ACTIVE TRACK (CLICK TO CLOSE)' : '▶ LAUNCH TRACK NODES'}
+                    </span>
+                  ) : (
+                    <span className="text-rose-500/80 flex items-center gap-1">
+                      🔒 LOCKED (CLEAR PRIOR TRACK)
+                    </span>
+                  )}
+                </div>
               </div>
+            );
+          })}
+        </div>
 
-              <h2 className="font-black text-lg tracking-tight text-white group-hover:text-[#ff3333] transition-colors">
-                {track.title}
-              </h2>
-              <p className={`text-xs mt-2 leading-relaxed ${isSelected ? 'text-rose-100/90' : 'text-slate-400'}`}>
-                {track.description}
-              </p>
-              
-              <div className="mt-5 pt-3 border-t border-white/10 flex justify-between items-center text-[10px] font-black font-mono">
-                {unlocked ? (
-                  <span className={isSelected ? 'text-rose-200 animate-pulse' : 'text-[#ff3333]'}>
-                    {isSelected ? '▼ ACTIVE TRACK (CLICK TO CLOSE)' : '▶ LAUNCH TRACK NODES'}
-                  </span>
-                ) : (
-                  <span className="text-rose-500/80 flex items-center gap-1">
-                    🔒 LOCKED (CLEAR PRIOR TRACK)
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </section>
+        {/* Right Arrow Button (Placed after Card 04) */}
+        <button
+          onClick={() => scrollTracks('right')}
+          className="ml-3 shrink-0 w-10 h-10 rounded-full bg-[#1a0808] border border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-white font-black flex items-center justify-center shadow-xl transition cursor-pointer active:scale-95"
+          aria-label="Scroll Tracks Right"
+        >
+          ▶
+        </button>
+      </div>
 
-      {/* 2. MODULES & SUBMODULES GRID */}
+      {/* 2. MODULES & SUBMODULES SECTION */}
       {activeTrack && (
         <section className="bg-[#0f0505] p-6 sm:p-8 rounded-3xl border border-[#ff3333]/30 shadow-[0_0_40px_rgba(0,0,0,0.8)] space-y-8 animate-fadeInFast relative">
           <div className="flex justify-between items-center border-b border-[#2b0808] pb-4">
@@ -350,12 +393,37 @@ export default function InteractiveCourseWrapper({ initialTracks = [] }) {
             ) : (
               (activeTrack.modules || []).map((mod, mIdx) => (
                 <div key={mod.id} className="space-y-4">
-                  <h3 className="font-black text-sm sm:text-base text-slate-200 flex items-center gap-2 uppercase tracking-wider font-mono">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff3333] animate-ping" />
-                    Module {mIdx + 1}: {mod.title}
-                  </h3>
+                  
+                  {/* Module Header + Scroll Buttons */}
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-black text-sm sm:text-base text-slate-200 flex items-center gap-2 uppercase tracking-wider font-mono">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#ff3333] animate-ping" />
+                      Module {mIdx + 1}: {mod.title}
+                    </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => scrollSubmodules(mod.id, 'left')}
+                        className="w-8 h-8 rounded-xl bg-[#1a0808] border border-[#2b0808] hover:border-[#ff3333] text-[#ff3333] font-black flex items-center justify-center text-xs transition cursor-pointer"
+                        aria-label="Scroll Submodules Left"
+                      >
+                        ◀
+                      </button>
+                      <button
+                        onClick={() => scrollSubmodules(mod.id, 'right')}
+                        className="w-8 h-8 rounded-xl bg-[#1a0808] border border-[#2b0808] hover:border-[#ff3333] text-[#ff3333] font-black flex items-center justify-center text-xs transition cursor-pointer"
+                        aria-label="Scroll Submodules Right"
+                      >
+                        ▶
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Horizontal Scrollable Submodule Cards Row */}
+                  <div 
+                    ref={(el) => (submodScrollRefs.current[mod.id] = el)}
+                    className="flex gap-4 overflow-x-auto scrollbar-none py-2 scroll-smooth"
+                  >
                     {(mod.submodules || []).map((submod) => {
                       const submodUnlocked = isSubmoduleUnlocked(submod.id);
                       const completed = completedSubmodules.includes(submod.id);
@@ -364,7 +432,7 @@ export default function InteractiveCourseWrapper({ initialTracks = [] }) {
                         <div
                           key={submod.id}
                           onClick={() => submodUnlocked && openSubmoduleModal(submod)}
-                          className={`p-5 rounded-2xl border text-left transition-all duration-200 group flex flex-col justify-between space-y-3 relative overflow-hidden ${
+                          className={`min-w-[260px] sm:min-w-[290px] max-w-[310px] p-5 rounded-2xl border text-left transition-all duration-200 group flex-shrink-0 flex flex-col justify-between space-y-3 relative overflow-hidden ${
                             submodUnlocked
                               ? completed
                                 ? 'bg-emerald-950/20 border-emerald-900/60 cursor-pointer hover:border-emerald-500 hover:scale-[1.02]'

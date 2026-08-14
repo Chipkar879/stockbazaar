@@ -3,6 +3,7 @@ import path from 'path';
 import Navbar from '@/components/Navbar';
 import InteractiveCourseWrapper from './InteractiveCourseWrapper';
 
+// Define the 4 Main Level Tracks
 const TRACK_DEFINITIONS = [
   {
     id: "track-1",
@@ -31,17 +32,25 @@ const TRACK_DEFINITIONS = [
     level: "Level 4: Master Investor",
     title: "Funds, Macroeconomics & Advanced Execution",
     description: "Master Mutual Funds, ETFs, Corporate Bonds, Order Types (Market vs Limit), and research frameworks."
+  },
+  {
+    id: "track-5",
+    trackNumber: 5,
+    level: "Level 5: Financial Guru",
+    title: "Advanced Portfolio Architecture, Valuation & Risk Engineering",
+    description: "Master complex portfolio strategies, market leadership techniques, and advanced financial modeling."
   }
 ];
 
 function getAllModulesData() {
   const dataDir = path.join(process.cwd(), 'app', 'data');
-  const allModules = [];
 
-  // Loop through files Mod_1.txt to Mod_28.txt
-  for (let i = 1; i <= 28; i++) {
-    const fileName = `Mod_${i}.txt`;
+  // Map each Track to its exact corresponding file (Track 1 -> Mod_1.txt, Track 2 -> Mod_2.txt, etc.)
+  return TRACK_DEFINITIONS.map((trackDef, index) => {
+    const fileNumber = index + 1;
+    const fileName = `Mod_${fileNumber}.txt`;
     const filePath = path.join(dataDir, fileName);
+    const trackModules = [];
 
     if (fs.existsSync(filePath)) {
       try {
@@ -49,22 +58,14 @@ function getAllModulesData() {
         const parsedModule = JSON.parse(fileContents);
         
         if (Array.isArray(parsedModule)) {
-          allModules.push(...parsedModule);
+          trackModules.push(...parsedModule);
         } else {
-          allModules.push(parsedModule);
+          trackModules.push(parsedModule);
         }
       } catch (error) {
         console.error(`Error reading or parsing ${fileName}:`, error);
       }
     }
-  }
-
-  // 7 Modules per Track (7 x 4 = 28 Modules)
-  const MODULES_PER_TRACK = 7;
-  return TRACK_DEFINITIONS.map((trackDef, index) => {
-    const startIdx = index * MODULES_PER_TRACK;
-    const endIdx = startIdx + MODULES_PER_TRACK;
-    const trackModules = allModules.slice(startIdx, endIdx);
 
     return {
       ...trackDef,
@@ -81,6 +82,7 @@ export default function ModulesPage() {
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         
+        {/* Header Section */}
         <div className="space-y-2 mb-10 text-center lg:text-left">
           <span className="inline-flex items-center gap-2 bg-[#1a0808] border border-[#2b0808] text-[#ff3333] text-[10px] uppercase tracking-widest font-black px-3.5 py-1 rounded-full shadow-inner mb-2 font-mono">
             🎓 Bull Run Academy
@@ -93,6 +95,7 @@ export default function ModulesPage() {
           </p>
         </div>
 
+        {/* Dynamic client wrapper */}
         <InteractiveCourseWrapper initialTracks={initialTracks} />
       </div>
     </main>
