@@ -1,119 +1,108 @@
 'use client';
+
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import { supabase } from '@/lib/supabase';
 
 export default function UpdatePasswordPage() {
-  const router = useRouter();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [status, setStatus] = useState({ loading: false, message: '', success: false });
+  const [newPassword, setNewPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ message: '', success: false });
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    // Check if the user arrived here with an active recovery session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setStatus({
-          loading: false,
-          message: 'Security token invalid or expired. Please request a new link from the login page.',
-          success: false
-        });
+    // 1. Listen for Supabase password recovery token exchange
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || session) {
+        setSessionReady(true);
       }
-    };
-    checkSession();
+    });
+
+    // 2. Check if user session already exchanged token
+    async function checkExistingSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setSessionReady(true);
+      }
+    }
+    checkExistingSession();
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handlePasswordUpdate = async (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setStatus({ loading: false, message: 'Passwords do not match.', success: false });
-      return;
-    }
-
-    setStatus({ loading: true, message: '', success: false });
+    setLoading(true);
+    setStatus({ message: '', success: false });
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: password
+        password: newPassword,
       });
 
       if (error) throw error;
 
       setStatus({
-        loading: false,
-        message: 'Security credentials updated! Routing you to your sandbox panel...',
-        success: true
+        message: 'Password successfully updated! Redirecting to login...',
+        success: true,
       });
 
-      // Clear the session tokens out safely and send them to login/simulator
       setTimeout(() => {
-        window.location.href = '/simulator';
+        window.location.href = '/signup?mode=login';
       }, 1500);
-
     } catch (err) {
-      setStatus({ loading: false, message: err.message, success: false });
+      setStatus({ message: err.message, success: false });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[#f5f7ff] antialiased">
+    <main className="min-h-screen bg-black text-slate-100 antialiased pt-28 pb-12 font-sans">
       <Navbar />
-      <section className="max-w-md mx-auto px-6 pt-16 pb-12">
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
-          
+      <section className="max-w-md mx-auto px-6">
+        <div className="bg-[#0f0505] border-2 border-[#2b0808] rounded-3xl p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="font-black text-2xl text-slate-950">Update Password</h1>
-            <p className="text-xs text-slate-500">Establish your new platform access credentials.</p>
+            <h1 className="font-black text-2xl text-white">Reset Password</h1>
+            <p className="text-xs text-slate-400">Enter your new security password below.</p>
           </div>
 
-          <form onSubmit={handlePasswordUpdate} className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">
-                New Secure Password
-              </label>
-              <input 
-                type="password" 
-                required 
-                minLength={6}
-                value={password}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
-                placeholder="••••••••" 
-                onChange={(e) => setPassword(e.target.value)} 
-              />
+          {!sessionReady ? (
+            <div className="p-4 bg-[#1a0808] border border-[#2b0808] text-amber-400 text-xs rounded-xl text-center font-mono animate-pulse">
+              Verifying security token from email link...
             </div>
+          ) : (
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1 font-mono">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 bg-[#1a0808] border border-[#2b0808] text-white rounded-xl text-sm focus:outline-none focus:border-[#7a0000] font-mono"
+                />
+              </div>
 
-            <div>
-              <label className="block text-[11px] font-black uppercase text-slate-400 tracking-wider mb-1">
-                Confirm New Password
-              </label>
-              <input 
-                type="password" 
-                required 
-                minLength={6}
-                value={confirmPassword}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
-                placeholder="••••••••" 
-                onChange={(e) => setConfirmPassword(e.target.value)} 
-              />
-            </div>
+              {status.message && (
+                <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-950/40 border-emerald-900/40 text-emerald-400' : 'bg-rose-950/40 border-rose-900/40 text-rose-400'}`}>
+                  {status.message}
+                </p>
+              )}
 
-            {status.message && (
-              <p className={`text-xs font-bold p-3 rounded-xl border ${status.success ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
-                {status.message}
-              </p>
-            )}
-
-            <button 
-              type="submit" 
-              disabled={status.loading || !password} 
-              className="w-full py-4 bg-blue-500 text-white font-black rounded-xl text-sm transition-all disabled:opacity-50"
-            >
-              {status.loading ? 'Updating Credentials...' : 'Save New Password'}
-            </button>
-          </form>
-
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-[#7a0000] hover:bg-[#a30000] text-white font-black rounded-xl text-sm uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer font-mono shadow-md"
+              >
+                {loading ? 'Updating Credentials...' : 'Save New Password'}
+              </button>
+            </form>
+          )}
         </div>
       </section>
     </main>

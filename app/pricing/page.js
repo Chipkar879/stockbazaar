@@ -17,19 +17,27 @@ export default function PricingPage() {
     isSuperAdmin: false,
     isPremium: false,
     isFrozen: false,
-    daysRemaining: 7,
+    targetExpiryDate: null,
+  });
+
+  // Real-time Countdown State
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    totalMs: 0,
   });
 
   const [paymentStep, setPaymentStep] = useState('browse'); // 'browse' | 'checkout' | 'success'
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 1. REAL SUPABASE SESSION & TRIAL CALCULATION
+  // 1. FETCH USER PROFILE & COMPUTE EXPIRY DATE
   useEffect(() => {
     async function initUserSubscription() {
       try {
         setLoading(true);
 
-        // Fetch authenticated user session
         const { data: { session } } = await supabase.auth.getSession();
         setUserSession(session);
 
@@ -37,10 +45,9 @@ export default function PricingPage() {
           const userEmail = session.user.email;
           const isSuperAdmin = userEmail === SUPER_ADMIN_EMAIL;
 
-          // Fetch real profile from Supabase database
           const { data: userProfile, error } = await supabase
             .from('profiles')
-            .select('id, email, role, is_premium, is_frozen, created_at')
+            .select('id, email, role, is_premium, is_frozen, created_at, access_expires_at')
             .eq('id', session.user.id)
             .single();
 
@@ -48,46 +55,40 @@ export default function PricingPage() {
             setProfile(userProfile);
             const isAdmin = isSuperAdmin || userProfile.role === 'admin' || userProfile.email === SUPER_ADMIN_EMAIL;
 
-            // SUPER ADMIN IMMUNITY
             if (isAdmin) {
               setStatus({
                 isSuperAdmin: true,
                 isPremium: true,
                 isFrozen: false,
-                daysRemaining: 999,
+                targetExpiryDate: null,
               });
               setLoading(false);
               return;
             }
 
-            // PAID PREMIUM ACCOUNT
-            if (userProfile.is_premium) {
-              setStatus({
-                isSuperAdmin: false,
-                isPremium: true,
-                isFrozen: false,
-                daysRemaining: 999,
-              });
-              setLoading(false);
-              return;
+            // Determine Target Expiration Date:
+            // 1. Explicit admin expiration date (access_expires_at)
+            // 2. Default 7 days from registration (created_at)
+            let expiryTimeMs;
+            if (userProfile.access_expires_at) {
+              expiryTimeMs = new Date(userProfile.access_expires_at).getTime();
+            } else {
+              const registrationDate = userProfile.created_at ? new Date(userProfile.created_at).getTime() : Date.now();
+              expiryTimeMs = registrationDate + (7 * 24 * 60 * 60 * 1000);
             }
 
-            // AUTOMATIC 7-DAY TRIAL CALCULATION
-            const registrationDate = userProfile.created_at ? new Date(userProfile.created_at).getTime() : Date.now();
             const now = Date.now();
-            const elapsedDays = Math.floor((now - registrationDate) / (1000 * 60 * 60 * 24));
-            const daysLeft = Math.max(0, 7 - elapsedDays);
-            const isAccountLocked = daysLeft === 0 && !userProfile.is_premium;
+            const isExpired = (now >= expiryTimeMs && !userProfile.is_premium) || userProfile.is_frozen === true;
 
             setStatus({
               isSuperAdmin: false,
-              isPremium: false,
-              isFrozen: isAccountLocked,
-              daysRemaining: daysLeft,
+              isPremium: !!userProfile.is_premium,
+              isFrozen: isExpired,
+              targetExpiryDate: expiryTimeMs,
             });
 
-            // Sync locked state back to database if expired
-            if (isAccountLocked && !userProfile.is_frozen) {
+            // Automatically lock account in database if trial has expired
+            if (isExpired && !userProfile.is_frozen && !userProfile.is_premium) {
               await supabase
                 .from('profiles')
                 .update({ is_frozen: true })
@@ -99,15 +100,16 @@ export default function PricingPage() {
           }
         }
 
-        // UNAUTHENTICATED / GUEST FALLBACK
+        // Unauthenticated guest default
+        const defaultGuestExpiry = Date.now() + (7 * 24 * 60 * 60 * 1000);
         setStatus({
           isSuperAdmin: false,
           isPremium: false,
           isFrozen: false,
-          daysRemaining: 7,
+          targetExpiryDate: defaultGuestExpiry,
         });
       } catch (err) {
-        console.error('Error fetching subscription state:', err);
+        console.error('Subscription sync error:', err);
       } finally {
         setLoading(false);
       }
@@ -116,18 +118,46 @@ export default function PricingPage() {
     initUserSubscription();
   }, []);
 
-  // 2. REAL SUBSCRIPTION PAYMENT VERIFICATION
+  // 2. REAL-TIME COUNTDOWN TIMER TICKER (1-SECOND INTERVAL)
+  useEffect(() => {
+    if (!status.targetExpiryDate || status.isSuperAdmin || status.isPremium) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const diffMs = status.targetExpiryDate - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
+        setStatus((prev) => ({ ...prev, isFrozen: true }));
+        clearInterval(interval);
+      } else {
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diffMs / 1000 / 60) % 60);
+        const seconds = Math.floor((diffMs / 1000) % 60);
+
+        setTimeLeft({ days, hours, minutes, seconds, totalMs: diffMs });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [status.targetExpiryDate, status.isSuperAdmin, status.isPremium]);
+
+  // 3. VERIFY & ACTIVATION PAYMENT HANDLER
   const handleVerifyPayment = async () => {
     setIsProcessing(true);
 
     try {
       if (userSession?.user) {
-        // Update database record in Supabase
+        // Extend access for 30 days from today
+        const new30DaysExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
         const { error } = await supabase
           .from('profiles')
           .update({
             is_premium: true,
             is_frozen: false,
+            access_expires_at: new30DaysExpiry,
             updated_at: new Date().toISOString(),
           })
           .eq('id', userSession.user.id);
@@ -135,26 +165,24 @@ export default function PricingPage() {
         if (error) throw error;
       }
 
-      // Update local UI state
       setStatus({
         isSuperAdmin: false,
         isPremium: true,
         isFrozen: false,
-        daysRemaining: 999,
+        targetExpiryDate: null,
       });
 
       setIsProcessing(false);
       setPaymentStep('success');
     } catch (err) {
-      console.error('Payment verification error:', err);
-      alert('Failed to update subscription. Please refresh or contact support.');
+      console.error('Payment activation error:', err);
+      alert('Failed to process payment. Please contact admin support.');
       setIsProcessing(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-black text-slate-100 antialiased font-sans max-w-full overflow-x-hidden pt-24 pb-20 relative">
-      {/* FIXED NAVBAR */}
       <Navbar />
 
       <div className="max-w-[1000px] mx-auto px-4 space-y-10">
@@ -168,51 +196,61 @@ export default function PricingPage() {
             Student Platform Access
           </h1>
           <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed">
-            Every account gets a 7-day free sandbox trial. After 7 days, a simple ₹49/month subscription is required to keep your account unlocked.
+            Every account receives a 7-day sandbox trial. Subscribe for ₹49/month to keep your workspace unfrozen.
           </p>
 
-          {/* REAL DYNAMIC SUBSCRIPTION STATUS BADGE */}
+          {/* DYNAMIC COUNTDOWN / STATUS BADGE */}
           <div className="pt-2 flex justify-center">
-            <div className="inline-flex items-center gap-3 bg-[#0f0505] border border-[#2b0808] px-4 py-2 rounded-2xl shadow-xl font-mono text-xs">
-              <span className="text-slate-500 font-medium">Account Status:</span>
+            <div className="bg-[#0f0505] border border-[#2b0808] px-5 py-3 rounded-2xl shadow-xl font-mono text-xs flex flex-col items-center gap-2">
+              <span className="text-slate-500 font-medium text-[10px] uppercase tracking-wider">Account Clearance Status</span>
               
               {loading ? (
-                <span className="text-slate-400 animate-pulse">Checking database...</span>
+                <span className="text-slate-400 animate-pulse">Querying database firewall...</span>
               ) : status.isSuperAdmin ? (
                 <span className="bg-amber-950 text-amber-400 font-black px-3 py-1 rounded-xl border border-amber-800 flex items-center gap-1.5">
                   👑 SUPER ADMIN IMMUNE ({SUPER_ADMIN_EMAIL})
                 </span>
               ) : status.isPremium ? (
                 <span className="bg-emerald-950 text-emerald-400 font-black px-3 py-1 rounded-xl border border-emerald-800 flex items-center gap-1.5">
-                  ✓ PRO PASS ACTIVE
+                  ✓ PRO PASS ACTIVE (UNLOCKED)
                 </span>
               ) : status.isFrozen ? (
                 <span className="bg-rose-950 text-rose-400 font-black px-3 py-1 rounded-xl border border-rose-800 animate-pulse flex items-center gap-1.5">
-                  🔒 ACCOUNT LOCKED — TRIAL EXPIRED
+                  🔒 ACCOUNT FROZEN — ACCESS EXPIRED
                 </span>
               ) : (
-                <span className="bg-amber-950 text-amber-400 font-black px-3 py-1 rounded-xl border border-amber-800 flex items-center gap-1.5">
-                  ⏳ FREE TRIAL: {status.daysRemaining} Days Remaining
-                </span>
+                /* LIVE COUNTDOWN DISPLAY */
+                <div className="flex flex-col items-center space-y-1">
+                  <span className="text-amber-400 font-bold text-[11px]">⏳ TIME REMAINING BEFORE FREEZE:</span>
+                  <div className="flex items-center gap-2 text-white font-black text-base bg-[#1a0808] px-4 py-1.5 rounded-xl border border-[#ff3333]/40">
+                    <div className="text-center"><span className="text-[#ff3333]">{String(timeLeft.days).padStart(2, '0')}</span><span className="text-[9px] text-slate-500 block font-normal">DAYS</span></div>
+                    <span className="text-[#ff3333]">:</span>
+                    <div className="text-center"><span className="text-[#ff3333]">{String(timeLeft.hours).padStart(2, '0')}</span><span className="text-[9px] text-slate-500 block font-normal">HRS</span></div>
+                    <span className="text-[#ff3333]">:</span>
+                    <div className="text-center"><span className="text-[#ff3333]">{String(timeLeft.minutes).padStart(2, '0')}</span><span className="text-[9px] text-slate-500 block font-normal">MIN</span></div>
+                    <span className="text-[#ff3333]">:</span>
+                    <div className="text-center"><span className="text-[#ff3333]">{String(timeLeft.seconds).padStart(2, '0')}</span><span className="text-[9px] text-slate-500 block font-normal">SEC</span></div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* LOCKED ACCOUNT WARNING (IF EXPIRED) */}
+        {/* LOCKED ACCOUNT WARNING */}
         {status.isFrozen && !status.isSuperAdmin && (
           <div className="bg-rose-950/60 border border-rose-500 p-6 rounded-3xl text-center space-y-3 max-w-xl mx-auto shadow-[0_0_30px_rgba(225,29,72,0.25)] animate-pulse">
             <div className="text-3xl">🔒</div>
             <h2 className="text-lg font-black text-rose-200 uppercase font-mono tracking-wider">
-              YOUR 7-DAY FREE TRIAL HAS EXPIRED
+              YOUR ACCOUNT ACCESS IS FROZEN
             </h2>
             <p className="text-xs text-rose-300 leading-relaxed font-medium">
-              Your student account access is locked. Subscribe for ₹49/month to instantly unlock all 28 modules, complete quizzes, and enter Volatility Arena matches.
+              Your free trial time has elapsed. Subscribe below for ₹49/month or contact your school admin to activate custom access days.
             </p>
           </div>
         )}
 
-        {/* MANDATORY ₹49 SUBSCRIPTION CARD */}
+        {/* SUBSCRIPTION CARD */}
         {paymentStep === 'browse' && (
           <div className="max-w-md mx-auto bg-[#0f0505] border border-[#ff3333] shadow-[0_0_40px_rgba(255,51,51,0.2)] rounded-3xl p-8 space-y-6 relative">
             <div className="space-y-4 text-center">
@@ -222,14 +260,14 @@ export default function PricingPage() {
 
               <h2 className="text-2xl font-black text-white">Full Platform Access Pass</h2>
               <p className="text-slate-400 text-xs leading-relaxed font-medium">
-                Unlocks all 28 modules, 336 submodules, Volatility Arena matches, and permanent profile progress tracking.
+                Unlocks all 28 modules, 336 submodules, Volatility Arena matches, and live portfolio tracking.
               </p>
 
               <div className="font-mono pt-2 border-y border-[#2b0808] py-4">
                 <span className="text-4xl font-black text-white">₹49</span>
                 <span className="text-slate-500 text-xs"> / month</span>
                 <span className="block text-[10px] text-emerald-400 font-bold mt-1">
-                  ✓ 7-Day Free Trial Included
+                  ✓ Instant Account Unfreeze
                 </span>
               </div>
             </div>
@@ -344,7 +382,7 @@ export default function PricingPage() {
             <div className="space-y-2">
               <h2 className="text-xl font-black text-emerald-400">Subscription Successfully Active!</h2>
               <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium">
-                Your payment cleared. Your account is fully unlocked in the database with permanent access to all 28 modules and Volatility Arena matches.
+                Your payment cleared. Your account is fully unfrozen in the database with access to all modules and Volatility Arena matches.
               </p>
             </div>
 
