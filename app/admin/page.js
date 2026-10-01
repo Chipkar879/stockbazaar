@@ -13,6 +13,11 @@ const getProfileFreezeStatus = (p) => {
     return { isFrozen: false, isSuperAdmin: true, expiryMs: null };
   }
 
+  // 1. Explicit admin freeze flag ALWAYS takes highest priority
+  if (p.is_frozen === true) {
+    return { isFrozen: true, isSuperAdmin: false, expiryMs: 0 };
+  }
+
   let expiryMs;
   if (p.access_expires_at) {
     expiryMs = new Date(p.access_expires_at).getTime();
@@ -22,7 +27,7 @@ const getProfileFreezeStatus = (p) => {
   }
 
   const isExpired = Date.now() >= expiryMs;
-  const isFrozen = p.is_frozen === true || (isExpired && !p.is_premium);
+  const isFrozen = (isExpired && !p.is_premium);
 
   return { isFrozen, isSuperAdmin: false, expiryMs };
 };
@@ -93,25 +98,26 @@ export default function SuperAdminDashboard() {
     if (!selectedProfile) return;
 
     const calculateTime = () => {
-      const { expiryMs, isSuperAdmin } = getProfileFreezeStatus(selectedProfile);
+      const { expiryMs, isSuperAdmin, isFrozen } = getProfileFreezeStatus(selectedProfile);
       
-      if (isSuperAdmin || !expiryMs) {
+      if (isSuperAdmin) {
         setModalTimeLeft({ days: 999, hours: 0, minutes: 0, seconds: 0, isExpired: false });
+        return;
+      }
+
+      if (isFrozen || !expiryMs || expiryMs <= Date.now()) {
+        setModalTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true });
         return;
       }
 
       const diffMs = expiryMs - Date.now();
 
-      if (diffMs <= 0 || selectedProfile.is_frozen === true) {
-        setModalTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true });
-      } else {
-        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diffMs / 1000 / 60) % 60);
-        const seconds = Math.floor((diffMs / 1000) % 60);
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diffMs / 1000 / 60) % 60);
+      const seconds = Math.floor((diffMs / 1000) % 60);
 
-        setModalTimeLeft({ days, hours, minutes, seconds, isExpired: false });
-      }
+      setModalTimeLeft({ days, hours, minutes, seconds, isExpired: false });
     };
 
     calculateTime();
@@ -163,21 +169,21 @@ export default function SuperAdminDashboard() {
 
       alert(`Successfully granted ${days} days of unfrozen access!`);
       
-      setSelectedProfile(prev => prev ? { 
-        ...prev, 
+      const updatedFields = {
         is_frozen: false,
         is_premium: true,
         access_expires_at: newExpiryDate
-      } : null);
+      };
 
-      fetchMasterData();
+      setSelectedProfile(prev => prev ? { ...prev, ...updatedFields } : null);
+      setAllProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updatedFields } : p));
     } catch (err) {
       console.error("Custom days activation error:", err);
       alert(`Failed to extend access: ${err.message}`);
     }
   };
 
-  // 3. DYNAMIC FREEZE / UNFREEZE TOGGLE HANDLER
+  // 3. DYNAMIC FREEZE / UNFREEZE TOGGLE HANDLER (CLEARS PREMIUM ON FREEZE)
   const handleToggleFreezeStatus = async (profileId, isCurrentlyFrozen, profileEmail) => {
     if (profileEmail === SUPER_ADMIN_EMAIL) {
       alert("⚠️ Super Admin account is immune and can NEVER be frozen.");
@@ -190,11 +196,22 @@ export default function SuperAdminDashboard() {
     if (!confirm(`Are you sure you want to ${actionLabel} this user account?`)) return;
 
     try {
-      const updatePayload = { is_frozen: newFrozenState };
-      
-      // If unfreezing an expired account, extend their access_expires_at by 7 days automatically
-      if (!newFrozenState && modalTimeLeft.isExpired) {
-        updatePayload.access_expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      let updatePayload = {};
+
+      if (newFrozenState) {
+        // HARD FREEZE: Flip is_frozen, revoke is_premium, and expire timestamps
+        updatePayload = {
+          is_frozen: true,
+          is_premium: false,
+          access_expires_at: new Date(0).toISOString()
+        };
+      } else {
+        // UNFREEZE: Restore access for 7 days
+        updatePayload = {
+          is_frozen: false,
+          is_premium: true,
+          access_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        };
       }
 
       const { error } = await supabase
@@ -206,12 +223,8 @@ export default function SuperAdminDashboard() {
 
       alert(`Account successfully ${newFrozenState ? 'FROZEN' : 'UNFROZEN'}.`);
       
-      setSelectedProfile(prev => prev ? { 
-        ...prev, 
-        ...updatePayload
-      } : null);
-
-      fetchMasterData();
+      setSelectedProfile(prev => prev ? { ...prev, ...updatePayload } : null);
+      setAllProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updatePayload } : p));
     } catch (err) {
       console.error("Freeze toggle error:", err);
       alert(`Failed to update freeze state: ${err.message}`);
@@ -399,7 +412,6 @@ export default function SuperAdminDashboard() {
           {/* USER CARDS GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
             {filteredProfiles.map((p) => {
-              // CONSISTENT FREEZE CHECK ON CARDS
               const { isFrozen, isSuperAdmin } = getProfileFreezeStatus(p);
 
               return (
