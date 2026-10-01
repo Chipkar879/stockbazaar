@@ -79,29 +79,62 @@ export default function RealSimulatorPage() {
           setUser(session.user);
           const userId = session.user.id;
 
-          // Load holdings from LocalStorage first
-          const savedHoldings = localStorage.getItem(`bullrun_holdings_${userId}`);
-          let parsedHoldings = {};
-          if (savedHoldings) {
-            parsedHoldings = JSON.parse(savedHoldings);
-            setRealHoldings(parsedHoldings);
-          }
-
-          // Fetch profile balance from Supabase
-          const { data: prof } = await supabase
+          // 1. Fetch balance & holdings from Supabase first
+          const { data: prof, error: profError } = await supabase
             .from('profiles')
-            .select('wallet_balance, net_worth')
+            .select('wallet_balance, balance, net_worth')
             .eq('id', userId)
             .single();
 
-          if (prof && prof.wallet_balance !== undefined && prof.wallet_balance !== null) {
-            setRealBalance(prof.wallet_balance);
-            localStorage.setItem(`bullrun_wallet_${userId}`, prof.wallet_balance.toString());
+          let fetchedBalance = null;
+          if (prof && !profError) {
+            if (prof.wallet_balance !== undefined && prof.wallet_balance !== null) {
+              fetchedBalance = Number(prof.wallet_balance);
+            } else if (prof.balance !== undefined && prof.balance !== null) {
+              fetchedBalance = Number(prof.balance);
+            }
+          }
+
+          // 2. Fetch user's holdings from database
+          const { data: holdingsData } = await supabase
+            .from('user_holdings')
+            .select('sym, shares, avg_price')
+            .eq('user_id', userId);
+
+          let parsedHoldings = {};
+          if (holdingsData && holdingsData.length > 0) {
+            holdingsData.forEach(h => {
+              parsedHoldings[h.sym] = {
+                sym: h.sym,
+                shares: Number(h.shares),
+                avgPrice: Number(h.avg_price)
+              };
+            });
+            setRealHoldings(parsedHoldings);
+            localStorage.setItem(`bullrun_holdings_${userId}`, JSON.stringify(parsedHoldings));
           } else {
-            // Check local storage fallback if Supabase field is null
+            // LocalStorage fallback for holdings
+            const savedHoldings = localStorage.getItem(`bullrun_holdings_${userId}`);
+            if (savedHoldings) {
+              parsedHoldings = JSON.parse(savedHoldings);
+              setRealHoldings(parsedHoldings);
+            }
+          }
+
+          // 3. Fallback priority for balance: Supabase -> LocalStorage -> START_REAL (50,000)
+          if (fetchedBalance !== null) {
+            setRealBalance(fetchedBalance);
+            localStorage.setItem(`bullrun_wallet_${userId}`, fetchedBalance.toString());
+          } else {
             const cachedWallet = localStorage.getItem(`bullrun_wallet_${userId}`);
             if (cachedWallet !== null) {
-              setRealBalance(parseFloat(cachedWallet));
+              const parsed = parseFloat(cachedWallet);
+              setRealBalance(parsed);
+              // Save to Supabase to initialize profile column
+              await supabase.from('profiles').update({ wallet_balance: parsed }).eq('id', userId);
+            } else {
+              setRealBalance(START_REAL);
+              await supabase.from('profiles').update({ wallet_balance: START_REAL }).eq('id', userId);
             }
           }
         } else {
@@ -116,7 +149,6 @@ export default function RealSimulatorPage() {
           if (guestWallet !== null) {
             setRealBalance(parseFloat(guestWallet));
           } else if (guestHoldings) {
-            // Deduce remaining balance if holdings exist but wallet was lost
             const parsedGuestHoldings = JSON.parse(guestHoldings);
             const totalSpent = Object.values(parsedGuestHoldings).reduce((sum, h) => sum + (h.avgPrice * h.shares), 0);
             const adjustedWallet = Math.max(0, START_REAL - totalSpent);
@@ -189,7 +221,7 @@ export default function RealSimulatorPage() {
     }, 0);
   }, [realHoldings, tvPrices]);
 
-  // AUTO-SYNC NET WORTH TO SUPABASE FOR LEADERBOARD ACCURACY
+  // PERIODIC SYNC OF NET WORTH TO SUPABASE FOR LEADERBOARDS
   useEffect(() => {
     if (!user) return;
 
@@ -361,7 +393,7 @@ export default function RealSimulatorPage() {
 
     await new Promise(r => setTimeout(r, 600));
 
-    // RE-FETCH LATEST LIVE PRICE AT MOMENT OF EXECUTION TO PREVENT STALE PRICE ARBITRAGE
+    // RE-FETCH LATEST LIVE PRICE AT MOMENT OF EXECUTION
     const latestPrice = tvPrices[pendingOrder.sym]?.price || pendingOrder.price;
     const finalTotalCost = Number((latestPrice * pendingOrder.qty).toFixed(2));
     const { sym, type, qty } = pendingOrder;
@@ -396,7 +428,6 @@ export default function RealSimulatorPage() {
 
       newBalance = Number((realBalance + finalTotalCost).toFixed(2));
 
-      // FLOATING POINT SAFE DEDUCTION
       const remainingShares = Number((existing.shares - qty).toFixed(4));
       if (remainingShares <= 0.0001) {
         delete updatedHoldings[sym];
@@ -409,7 +440,7 @@ export default function RealSimulatorPage() {
     setRealBalance(newBalance);
     setRealHoldings(updatedHoldings);
 
-    // ATOMIC PERSISTENCE FIX: SAVE BOTH WALLET & HOLDINGS TOGETHER
+    // ATOMIC PERSISTENCE FIX: IMMEDIATELY WRITE TO SUPABASE & LOCALSTORAGE
     if (user) {
       const userId = user.id;
       localStorage.setItem(`bullrun_wallet_${userId}`, newBalance.toString());
@@ -421,13 +452,48 @@ export default function RealSimulatorPage() {
       }, 0);
       const finalNetWorth = Number((newBalance + holdingsVal).toFixed(2));
 
-      await supabase
-        .from('profiles')
-        .update({ 
-          wallet_balance: newBalance,
-          net_worth: finalNetWorth
-        })
-        .eq('id', userId);
+      try {
+        // Immediate balance & net worth write
+        await supabase
+          .from('profiles')
+          .update({ 
+            wallet_balance: newBalance,
+            net_worth: finalNetWorth
+          })
+          .eq('id', userId);
+
+        // Immediate holding write
+        if (type === 'BUY') {
+          await supabase
+            .from('user_holdings')
+            .upsert({
+              user_id: userId,
+              sym: sym,
+              shares: updatedHoldings[sym].shares,
+              avg_price: updatedHoldings[sym].avgPrice,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id,sym' });
+        } else {
+          if (updatedHoldings[sym]) {
+            await supabase
+              .from('user_holdings')
+              .update({
+                shares: updatedHoldings[sym].shares,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', userId)
+              .eq('sym', sym);
+          } else {
+            await supabase
+              .from('user_holdings')
+              .delete()
+              .eq('user_id', userId)
+              .eq('sym', sym);
+          }
+        }
+      } catch (dbErr) {
+        console.error("Direct Supabase trade persistence error:", dbErr);
+      }
     } else {
       // GUEST MODE LOCAL STORAGE PERSISTENCE
       localStorage.setItem('bullrun_guest_wallet', newBalance.toString());
