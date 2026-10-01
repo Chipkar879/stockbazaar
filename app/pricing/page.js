@@ -68,7 +68,7 @@ export default function PricingPage() {
 
             // Determine Target Expiration Date:
             // 1. Explicit admin expiration date (access_expires_at)
-            // 2. Default 7 days from registration (created_at)
+            // 2. Default 7 days from registration date (created_at)
             let expiryTimeMs;
             if (userProfile.access_expires_at) {
               expiryTimeMs = new Date(userProfile.access_expires_at).getTime();
@@ -87,7 +87,7 @@ export default function PricingPage() {
               targetExpiryDate: expiryTimeMs,
             });
 
-            // Automatically lock account in database if trial has expired
+            // Automatically freeze account in database if trial expired
             if (isExpired && !userProfile.is_frozen && !userProfile.is_premium) {
               await supabase
                 .from('profiles')
@@ -100,13 +100,12 @@ export default function PricingPage() {
           }
         }
 
-        // Unauthenticated guest default
-        const defaultGuestExpiry = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        // Unauthenticated guest: no expiry countdown until account is created
         setStatus({
           isSuperAdmin: false,
           isPremium: false,
           isFrozen: false,
-          targetExpiryDate: defaultGuestExpiry,
+          targetExpiryDate: null,
         });
       } catch (err) {
         console.error('Subscription sync error:', err);
@@ -118,9 +117,9 @@ export default function PricingPage() {
     initUserSubscription();
   }, []);
 
-  // 2. REAL-TIME COUNTDOWN TIMER TICKER (1-SECOND INTERVAL)
+  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR SIGNED-IN USERS)
   useEffect(() => {
-    if (!status.targetExpiryDate || status.isSuperAdmin || status.isPremium) return;
+    if (!userSession || !status.targetExpiryDate || status.isSuperAdmin || status.isPremium) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -141,7 +140,7 @@ export default function PricingPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [status.targetExpiryDate, status.isSuperAdmin, status.isPremium]);
+  }, [userSession, status.targetExpiryDate, status.isSuperAdmin, status.isPremium]);
 
   // 3. VERIFY & ACTIVATION PAYMENT HANDLER
   const handleVerifyPayment = async () => {
@@ -196,7 +195,7 @@ export default function PricingPage() {
             Student Platform Access
           </h1>
           <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed">
-            Every account receives a 7-day sandbox trial. Subscribe for ₹59/month to keep your workspace unfrozen.
+            Every registered account gets an unrestricted 7-day sandbox trial. Subscribe for ₹59/month to keep your workspace active.
           </p>
 
           {/* DYNAMIC COUNTDOWN / STATUS BADGE */}
@@ -206,6 +205,20 @@ export default function PricingPage() {
               
               {loading ? (
                 <span className="text-slate-400 animate-pulse">Querying database firewall...</span>
+              ) : !userSession ? (
+                /* GUEST NOT SIGNED IN VIEW */
+                <div className="flex flex-col items-center space-y-2 py-1">
+                  <span className="text-amber-400 font-bold text-[11px]">✨ 7-DAY FREE TRIAL AVAILABLE</span>
+                  <p className="text-slate-400 text-[10px] max-w-xs text-center font-sans">
+                    Countdown begins the moment you create your profile.
+                  </p>
+                  <Link
+                    href="/signup"
+                    className="mt-1 px-4 py-1.5 bg-[#7a0000] hover:bg-[#a30000] text-white font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all"
+                  >
+                    Claim 7-Day Free Pass →
+                  </Link>
+                </div>
               ) : status.isSuperAdmin ? (
                 <span className="bg-amber-950 text-amber-400 font-black px-3 py-1 rounded-xl border border-amber-800 flex items-center gap-1.5">
                   👑 SUPER ADMIN IMMUNE ({SUPER_ADMIN_EMAIL})
@@ -219,7 +232,7 @@ export default function PricingPage() {
                   🔒 ACCOUNT FROZEN — ACCESS EXPIRED
                 </span>
               ) : (
-                /* LIVE COUNTDOWN DISPLAY */
+                /* LOGGED IN USER LIVE COUNTDOWN DISPLAY */
                 <div className="flex flex-col items-center space-y-1">
                   <span className="text-amber-400 font-bold text-[11px]">⏳ TIME REMAINING BEFORE FREEZE:</span>
                   <div className="flex items-center gap-2 text-white font-black text-base bg-[#1a0808] px-4 py-1.5 rounded-xl border border-[#ff3333]/40">
@@ -238,14 +251,14 @@ export default function PricingPage() {
         </div>
 
         {/* LOCKED ACCOUNT WARNING */}
-        {status.isFrozen && !status.isSuperAdmin && (
+        {userSession && status.isFrozen && !status.isSuperAdmin && (
           <div className="bg-rose-950/60 border border-rose-500 p-6 rounded-3xl text-center space-y-3 max-w-xl mx-auto shadow-[0_0_30px_rgba(225,29,72,0.25)] animate-pulse">
             <div className="text-3xl">🔒</div>
             <h2 className="text-lg font-black text-rose-200 uppercase font-mono tracking-wider">
               YOUR ACCOUNT ACCESS IS FROZEN
             </h2>
             <p className="text-xs text-rose-300 leading-relaxed font-medium">
-              Your free trial time has elapsed. Subscribe below for ₹59/month or contact your school admin to activate custom access days.
+              Your 7-day free trial has expired. Subscribe below for ₹59/month or contact your school coordinator to activate custom access days.
             </p>
           </div>
         )}
@@ -302,6 +315,13 @@ export default function PricingPage() {
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-2xl font-mono shadow-lg block text-center transition-all"
               >
                 Launch Learning Arena →
+              </Link>
+            ) : !userSession ? (
+              <Link
+                href="/signup"
+                className="w-full py-4 bg-[#ff3333] hover:bg-[#dc2626] text-white text-xs font-black uppercase tracking-wider rounded-2xl font-mono shadow-lg shadow-[#ff3333]/20 transition-all block text-center"
+              >
+                Create Account for Free Trial →
               </Link>
             ) : (
               <button
