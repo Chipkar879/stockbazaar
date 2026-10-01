@@ -13,7 +13,7 @@ const getProfileFreezeStatus = (p) => {
     return { isFrozen: false, isSuperAdmin: true, expiryMs: null };
   }
 
-  // 1. Explicit admin freeze flag ALWAYS takes highest priority
+  // 1. Explicit admin freeze flag in database ALWAYS takes top priority
   if (p.is_frozen === true) {
     return { isFrozen: true, isSuperAdmin: false, expiryMs: 0 };
   }
@@ -183,7 +183,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  // 3. DYNAMIC FREEZE / UNFREEZE TOGGLE HANDLER (CLEARS PREMIUM ON FREEZE)
+  // 3. BULLETPROOF FREEZE / UNFREEZE TOGGLE HANDLER (ALL-IN-ONE)
   const handleToggleFreezeStatus = async (profileId, isCurrentlyFrozen, profileEmail) => {
     if (profileEmail === SUPER_ADMIN_EMAIL) {
       alert("⚠️ Super Admin account is immune and can NEVER be frozen.");
@@ -191,22 +191,22 @@ export default function SuperAdminDashboard() {
     }
 
     const newFrozenState = !isCurrentlyFrozen;
-    const actionLabel = newFrozenState ? 'FREEZE' : 'UNFREEZE';
+    const action = newFrozenState ? 'FREEZE' : 'UNFREEZE';
 
-    if (!confirm(`Are you sure you want to ${actionLabel} this user account?`)) return;
+    if (!confirm(`Are you sure you want to ${action} this user account?`)) return;
 
     try {
       let updatePayload = {};
 
       if (newFrozenState) {
-        // HARD FREEZE: Flip is_frozen, revoke is_premium, and expire timestamps
+        // 🔥 HARD FREEZE: Force is_frozen=true, wipe is_premium=false, set expiry in the past
         updatePayload = {
           is_frozen: true,
           is_premium: false,
           access_expires_at: new Date(0).toISOString()
         };
       } else {
-        // UNFREEZE: Restore access for 7 days
+        // 🔓 UNFREEZE: Restore is_frozen=false, activate premium, grant 7 days
         updatePayload = {
           is_frozen: false,
           is_premium: true,
@@ -214,15 +214,22 @@ export default function SuperAdminDashboard() {
         };
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update(updatePayload)
-        .eq('id', profileId);
+        .eq('id', profileId)
+        .select();
 
       if (error) throw error;
 
-      alert(`Account successfully ${newFrozenState ? 'FROZEN' : 'UNFROZEN'}.`);
-      
+      if (!data || data.length === 0) {
+        alert("⚠️ Supabase didn't update this row. Please make sure Row Level Security (RLS) on your 'profiles' table allows UPDATE for admins.");
+        return;
+      }
+
+      alert(`Account successfully ${action}D!`);
+
+      // Immediately synchronize local UI state
       setSelectedProfile(prev => prev ? { ...prev, ...updatePayload } : null);
       setAllProfiles(prev => prev.map(p => p.id === profileId ? { ...p, ...updatePayload } : p));
     } catch (err) {
