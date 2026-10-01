@@ -71,7 +71,7 @@ export async function middleware(req) {
     return res;
   }
 
-  // CASE 3: LOGGED IN USER — CHECK 7-DAY TRIAL & FREEZE STATUS
+  // CASE 3: LOGGED IN USER — CHECK TRIAL & FREEZE STATUS
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -98,7 +98,9 @@ export async function middleware(req) {
 
     const hasPremium = Boolean(profile.is_premium);
     const isTrialExpired = Date.now() >= expiryMs && !hasPremium;
-    const isFrozen = !hasPremium && Boolean(profile.is_frozen || isTrialExpired);
+
+    // Explicit database freeze takes absolute precedence over Pro/Premium status
+    const isFrozen = Boolean(profile.is_frozen) || isTrialExpired;
 
     if (isFrozen) {
       const isAllowedForFrozenUser = pathname === '/' || pathname.startsWith('/pricing');

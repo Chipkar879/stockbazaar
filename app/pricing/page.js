@@ -66,9 +66,7 @@ export default function PricingPage() {
               return;
             }
 
-            // Determine Target Expiration Date:
-            // 1. Explicit admin expiration date (access_expires_at)
-            // 2. Default 7 days from registration date (created_at)
+            // Determine Target Expiration Date
             let expiryTimeMs;
             if (userProfile.access_expires_at) {
               expiryTimeMs = new Date(userProfile.access_expires_at).getTime();
@@ -80,25 +78,22 @@ export default function PricingPage() {
             const now = Date.now();
             const hasPremium = Boolean(userProfile.is_premium);
             const isTrialExpired = now >= expiryTimeMs && !hasPremium;
-            const isFrozenCalculated = !hasPremium && Boolean(userProfile.is_frozen || isTrialExpired);
+
+            // Explicit database freeze takes absolute precedence
+            const isFrozenCalculated = Boolean(userProfile.is_frozen) || isTrialExpired;
 
             setStatus({
               isSuperAdmin: false,
-              isPremium: hasPremium,
+              isPremium: hasPremium && !userProfile.is_frozen, // If frozen by admin, Pro privileges are suspended
               isFrozen: isFrozenCalculated,
               targetExpiryDate: expiryTimeMs,
             });
 
-            // Reconcile database state if trial expired or is premium
-            if (isFrozenCalculated && !userProfile.is_frozen) {
+            // Automatically sync freeze state to Supabase if 7-day trial expired
+            if (isTrialExpired && !userProfile.is_frozen) {
               await supabase
                 .from('profiles')
                 .update({ is_frozen: true })
-                .eq('id', session.user.id);
-            } else if (hasPremium && userProfile.is_frozen) {
-              await supabase
-                .from('profiles')
-                .update({ is_frozen: false })
                 .eq('id', session.user.id);
             }
 
@@ -107,7 +102,7 @@ export default function PricingPage() {
           }
         }
 
-        // Unauthenticated guest: no countdown until account is created
+        // Unauthenticated guest
         setStatus({
           isSuperAdmin: false,
           isPremium: false,
@@ -124,9 +119,9 @@ export default function PricingPage() {
     initUserSubscription();
   }, []);
 
-  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR NON-PREMIUM SIGNED-IN USERS)
+  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR NON-PREMIUM & ACTIVE USERS)
   useEffect(() => {
-    if (!userSession || !status.targetExpiryDate || status.isSuperAdmin || status.isPremium) return;
+    if (!userSession || !status.targetExpiryDate || status.isSuperAdmin || status.isPremium || status.isFrozen) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -147,7 +142,7 @@ export default function PricingPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [userSession, status.targetExpiryDate, status.isSuperAdmin, status.isPremium]);
+  }, [userSession, status.targetExpiryDate, status.isSuperAdmin, status.isPremium, status.isFrozen]);
 
   // 3. VERIFY & ACTIVATION PAYMENT HANDLER
   const handleVerifyPayment = async () => {
@@ -228,13 +223,13 @@ export default function PricingPage() {
                 <span className="bg-amber-950 text-amber-400 font-black px-3 py-1 rounded-xl border border-amber-800 flex items-center gap-1.5">
                   👑 SUPER ADMIN IMMUNE ({SUPER_ADMIN_EMAIL})
                 </span>
-              ) : status.isPremium ? (
-                <span className="bg-emerald-950 text-emerald-400 font-black px-3 py-1 rounded-xl border border-emerald-800 flex items-center gap-1.5">
-                  ✓ PRO PASS ACTIVE (UNLOCKED)
-                </span>
               ) : status.isFrozen ? (
                 <span className="bg-rose-950 text-rose-400 font-black px-3 py-1 rounded-xl border border-rose-800 animate-pulse flex items-center gap-1.5">
                   🔒 ACCOUNT FROZEN — ACCESS EXPIRED
+                </span>
+              ) : status.isPremium ? (
+                <span className="bg-emerald-950 text-emerald-400 font-black px-3 py-1 rounded-xl border border-emerald-800 flex items-center gap-1.5">
+                  ✓ PRO PASS ACTIVE (UNLOCKED)
                 </span>
               ) : (
                 <div className="flex flex-col items-center space-y-1">
@@ -254,15 +249,15 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* LOCKED ACCOUNT WARNING — ONLY SHOWN IF NOT PREMIUM */}
-        {userSession && status.isFrozen && !status.isPremium && !status.isSuperAdmin && (
+        {/* LOCKED ACCOUNT WARNING */}
+        {userSession && status.isFrozen && !status.isSuperAdmin && (
           <div className="bg-rose-950/60 border border-rose-500 p-6 rounded-3xl text-center space-y-3 max-w-xl mx-auto shadow-[0_0_30px_rgba(225,29,72,0.25)] animate-pulse">
             <div className="text-3xl">🔒</div>
             <h2 className="text-lg font-black text-rose-200 uppercase font-mono tracking-wider">
               YOUR ACCOUNT ACCESS IS FROZEN
             </h2>
             <p className="text-xs text-rose-300 leading-relaxed font-medium">
-              Your 7-day free trial has expired. Subscribe below for ₹59/month or contact your school coordinator to activate custom access days.
+              Your account access is currently locked. Subscribe below for ₹59/month or contact your school coordinator to activate custom access days.
             </p>
           </div>
         )}
@@ -313,7 +308,7 @@ export default function PricingPage() {
               </ul>
             </div>
 
-            {status.isPremium || status.isSuperAdmin ? (
+            {status.isPremium && !status.isFrozen ? (
               <Link
                 href="/modules"
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-2xl font-mono shadow-lg block text-center transition-all"
