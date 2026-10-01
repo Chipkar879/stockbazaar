@@ -79,17 +79,17 @@ export default function PricingPage() {
             const hasPremium = Boolean(userProfile.is_premium);
             const isTrialExpired = now >= expiryTimeMs && !hasPremium;
 
-            // Explicit database freeze takes absolute precedence
+            // STRICT OVERRIDE: Database freeze flag always wins
             const isFrozenCalculated = Boolean(userProfile.is_frozen) || isTrialExpired;
 
             setStatus({
               isSuperAdmin: false,
-              isPremium: hasPremium && !userProfile.is_frozen, // If frozen by admin, Pro privileges are suspended
+              isPremium: hasPremium && !userProfile.is_frozen,
               isFrozen: isFrozenCalculated,
               targetExpiryDate: expiryTimeMs,
             });
 
-            // Automatically sync freeze state to Supabase if 7-day trial expired
+            // Sync freeze status back to database if trial has expired
             if (isTrialExpired && !userProfile.is_frozen) {
               await supabase
                 .from('profiles')
@@ -119,7 +119,7 @@ export default function PricingPage() {
     initUserSubscription();
   }, []);
 
-  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR NON-PREMIUM & ACTIVE USERS)
+  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR NON-FROZEN, ACTIVE GUESTS/TRIAL USERS)
   useEffect(() => {
     if (!userSession || !status.targetExpiryDate || status.isSuperAdmin || status.isPremium || status.isFrozen) return;
 
@@ -129,7 +129,7 @@ export default function PricingPage() {
 
       if (diffMs <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0 });
-        setStatus((prev) => ({ ...prev, isFrozen: true }));
+        setStatus((prev) => ({ ...prev, isFrozen: true, isPremium: false }));
         clearInterval(interval);
       } else {
         const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -199,7 +199,7 @@ export default function PricingPage() {
             Every registered account gets an unrestricted 7-day sandbox trial. Subscribe for ₹59/month to keep your workspace active.
           </p>
 
-          {/* DYNAMIC COUNTDOWN / STATUS BADGE */}
+          {/* DYNAMIC CLEARANCE BADGE */}
           <div className="pt-2 flex justify-center">
             <div className="bg-[#0f0505] border border-[#2b0808] px-5 py-3 rounded-2xl shadow-xl font-mono text-xs flex flex-col items-center gap-2">
               <span className="text-slate-500 font-medium text-[10px] uppercase tracking-wider">Account Clearance Status</span>
@@ -249,7 +249,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* LOCKED ACCOUNT WARNING */}
+        {/* LOCKED ACCOUNT WARNING — EXCLUSIVE TO FROZEN STATE */}
         {userSession && status.isFrozen && !status.isSuperAdmin && (
           <div className="bg-rose-950/60 border border-rose-500 p-6 rounded-3xl text-center space-y-3 max-w-xl mx-auto shadow-[0_0_30px_rgba(225,29,72,0.25)] animate-pulse">
             <div className="text-3xl">🔒</div>
@@ -257,7 +257,7 @@ export default function PricingPage() {
               YOUR ACCOUNT ACCESS IS FROZEN
             </h2>
             <p className="text-xs text-rose-300 leading-relaxed font-medium">
-              Your account access is currently locked. Subscribe below for ₹59/month or contact your school coordinator to activate custom access days.
+              Your account workspace is currently restricted. Subscribe below for ₹59/month or contact support to reactivate your access.
             </p>
           </div>
         )}

@@ -1,53 +1,52 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Permanent super admin immunity email
 const SUPER_ADMIN_EMAIL = 'verymystery18@gmail.com';
 
 export async function middleware(req) {
   const res = NextResponse.next();
   const { pathname } = req.nextUrl;
 
-  // 1. Static files and internal API routes always allowed
-  const isInternalAsset =
+  // 1. Static files & internal assets always pass
+  if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.startsWith('/favicon.ico');
-
-  if (isInternalAsset) {
+    pathname.startsWith('/favicon.ico')
+  ) {
     return res;
   }
 
-  // 2. Open public pages that anyone (guest or frozen user) can see
+  // 2. Open public pages
   const isAlwaysAllowedPage =
     pathname === '/' ||
     pathname.startsWith('/pricing') ||
     pathname.startsWith('/signup') ||
     pathname.startsWith('/auth');
 
-  // 3. Extract the Supabase auth token directly from request cookies
+  // 3. Extract the auth token from cookies
   const allCookies = req.cookies.getAll();
   const authCookie = allCookies.find((c) =>
     c.name.includes('-auth-token') || c.name.startsWith('sb-')
   );
 
   let user = null;
+  let accessToken = null;
 
   if (authCookie) {
     try {
-      let token = authCookie.value;
-      if (token.startsWith('base64-')) {
-        token = Buffer.from(token.replace('base64-', ''), 'base64').toString('utf-8');
+      let rawVal = authCookie.value;
+      if (rawVal.startsWith('base64-')) {
+        rawVal = Buffer.from(rawVal.replace('base64-', ''), 'base64').toString('utf-8');
       }
-      const parsed = JSON.parse(token);
-      const accessToken = Array.isArray(parsed) ? parsed[0] : parsed?.access_token || parsed;
+      const parsed = JSON.parse(rawVal);
+      accessToken = Array.isArray(parsed) ? parsed[0] : parsed?.access_token || parsed;
 
       if (accessToken && typeof accessToken === 'string') {
-        const supabase = createClient(
+        const supabaseAuth = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         );
-        const { data } = await supabase.auth.getUser(accessToken);
+        const { data } = await supabaseAuth.auth.getUser(accessToken);
         user = data?.user || null;
       }
     } catch {
@@ -55,38 +54,41 @@ export async function middleware(req) {
     }
   }
 
-  // CASE 1: NOT LOGGED IN
+  // NOT LOGGED IN
   if (!user) {
-    if (isAlwaysAllowedPage) {
-      return res;
-    }
+    if (isAlwaysAllowedPage) return res;
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = '/signup';
     loginUrl.searchParams.set('mode', 'login');
     return NextResponse.redirect(loginUrl);
   }
 
-  // CASE 2: LOGGED IN AS SUPER ADMIN
+  // SUPER ADMIN IMMUNITY
   if (user.email === SUPER_ADMIN_EMAIL) {
     return res;
   }
 
-  // CASE 3: LOGGED IN USER — CHECK TRIAL & FREEZE STATUS
+  // QUERY PROFILE WITH USER'S AUTH HEADER (Bypasses RLS blocks)
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    }
   );
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_frozen, is_premium, access_expires_at, created_at, role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profile) {
-    if (profile.role === 'admin') {
-      return res;
-    }
+    if (profile.role === 'admin') return res;
 
     let expiryMs;
     if (profile.access_expires_at) {
@@ -98,8 +100,8 @@ export async function middleware(req) {
 
     const hasPremium = Boolean(profile.is_premium);
     const isTrialExpired = Date.now() >= expiryMs && !hasPremium;
-
-    // Explicit database freeze takes absolute precedence over Pro/Premium status
+    
+    // HARD ENFORCEMENT: If is_frozen is TRUE in Supabase, BLOCK IMMEDIATELY
     const isFrozen = Boolean(profile.is_frozen) || isTrialExpired;
 
     if (isFrozen) {
