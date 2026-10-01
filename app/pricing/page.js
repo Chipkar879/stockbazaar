@@ -78,20 +78,27 @@ export default function PricingPage() {
             }
 
             const now = Date.now();
-            const isExpired = (now >= expiryTimeMs && !userProfile.is_premium) || userProfile.is_frozen === true;
+            const hasPremium = Boolean(userProfile.is_premium);
+            const isTrialExpired = now >= expiryTimeMs && !hasPremium;
+            const isFrozenCalculated = !hasPremium && Boolean(userProfile.is_frozen || isTrialExpired);
 
             setStatus({
               isSuperAdmin: false,
-              isPremium: !!userProfile.is_premium,
-              isFrozen: isExpired,
+              isPremium: hasPremium,
+              isFrozen: isFrozenCalculated,
               targetExpiryDate: expiryTimeMs,
             });
 
-            // Automatically freeze account in database if trial expired
-            if (isExpired && !userProfile.is_frozen && !userProfile.is_premium) {
+            // Reconcile database state if trial expired or is premium
+            if (isFrozenCalculated && !userProfile.is_frozen) {
               await supabase
                 .from('profiles')
                 .update({ is_frozen: true })
+                .eq('id', session.user.id);
+            } else if (hasPremium && userProfile.is_frozen) {
+              await supabase
+                .from('profiles')
+                .update({ is_frozen: false })
                 .eq('id', session.user.id);
             }
 
@@ -100,7 +107,7 @@ export default function PricingPage() {
           }
         }
 
-        // Unauthenticated guest: no expiry countdown until account is created
+        // Unauthenticated guest: no countdown until account is created
         setStatus({
           isSuperAdmin: false,
           isPremium: false,
@@ -117,7 +124,7 @@ export default function PricingPage() {
     initUserSubscription();
   }, []);
 
-  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR SIGNED-IN USERS)
+  // 2. REAL-TIME COUNTDOWN TIMER TICKER (ONLY FOR NON-PREMIUM SIGNED-IN USERS)
   useEffect(() => {
     if (!userSession || !status.targetExpiryDate || status.isSuperAdmin || status.isPremium) return;
 
@@ -148,7 +155,6 @@ export default function PricingPage() {
 
     try {
       if (userSession?.user) {
-        // Extend access for 30 days from today
         const new30DaysExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
         const { error } = await supabase
@@ -206,7 +212,6 @@ export default function PricingPage() {
               {loading ? (
                 <span className="text-slate-400 animate-pulse">Querying database firewall...</span>
               ) : !userSession ? (
-                /* GUEST NOT SIGNED IN VIEW */
                 <div className="flex flex-col items-center space-y-2 py-1">
                   <span className="text-amber-400 font-bold text-[11px]">✨ 7-DAY FREE TRIAL AVAILABLE</span>
                   <p className="text-slate-400 text-[10px] max-w-xs text-center font-sans">
@@ -232,7 +237,6 @@ export default function PricingPage() {
                   🔒 ACCOUNT FROZEN — ACCESS EXPIRED
                 </span>
               ) : (
-                /* LOGGED IN USER LIVE COUNTDOWN DISPLAY */
                 <div className="flex flex-col items-center space-y-1">
                   <span className="text-amber-400 font-bold text-[11px]">⏳ TIME REMAINING BEFORE FREEZE:</span>
                   <div className="flex items-center gap-2 text-white font-black text-base bg-[#1a0808] px-4 py-1.5 rounded-xl border border-[#ff3333]/40">
@@ -250,8 +254,8 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* LOCKED ACCOUNT WARNING */}
-        {userSession && status.isFrozen && !status.isSuperAdmin && (
+        {/* LOCKED ACCOUNT WARNING — ONLY SHOWN IF NOT PREMIUM */}
+        {userSession && status.isFrozen && !status.isPremium && !status.isSuperAdmin && (
           <div className="bg-rose-950/60 border border-rose-500 p-6 rounded-3xl text-center space-y-3 max-w-xl mx-auto shadow-[0_0_30px_rgba(225,29,72,0.25)] animate-pulse">
             <div className="text-3xl">🔒</div>
             <h2 className="text-lg font-black text-rose-200 uppercase font-mono tracking-wider">

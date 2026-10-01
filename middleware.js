@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 // Permanent super admin immunity email
 const SUPER_ADMIN_EMAIL = 'verymystery18@gmail.com';
@@ -8,7 +8,7 @@ export async function middleware(req) {
   const res = NextResponse.next();
   const { pathname } = req.nextUrl;
 
-  // 1. Static files and API routes that must always be accessible
+  // 1. Static files and internal API routes always allowed
   const isInternalAsset =
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -25,33 +25,41 @@ export async function middleware(req) {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/auth');
 
-  // 3. Initialize Supabase SSR client
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => req.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set(name, value);
-            res.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
+  // 3. Extract the Supabase auth token directly from request cookies
+  const allCookies = req.cookies.getAll();
+  const authCookie = allCookies.find((c) =>
+    c.name.includes('-auth-token') || c.name.startsWith('sb-')
   );
 
-  // 4. Fetch the authenticated user
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+
+  if (authCookie) {
+    try {
+      let token = authCookie.value;
+      if (token.startsWith('base64-')) {
+        token = Buffer.from(token.replace('base64-', ''), 'base64').toString('utf-8');
+      }
+      const parsed = JSON.parse(token);
+      const accessToken = Array.isArray(parsed) ? parsed[0] : parsed?.access_token || parsed;
+
+      if (accessToken && typeof accessToken === 'string') {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
+        const { data } = await supabase.auth.getUser(accessToken);
+        user = data?.user || null;
+      }
+    } catch {
+      user = null;
+    }
+  }
 
   // CASE 1: NOT LOGGED IN
   if (!user) {
-    // Allow homepage, pricing, signup, and auth callbacks
     if (isAlwaysAllowedPage) {
       return res;
     }
-    // Redirect to login for all other features (simulator, modules, arena, etc.)
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = '/signup';
     loginUrl.searchParams.set('mode', 'login');
@@ -64,6 +72,11 @@ export async function middleware(req) {
   }
 
   // CASE 3: LOGGED IN USER — CHECK 7-DAY TRIAL & FREEZE STATUS
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_frozen, is_premium, access_expires_at, created_at, role')
@@ -71,12 +84,10 @@ export async function middleware(req) {
     .single();
 
   if (profile) {
-    // Super admin role immunity
     if (profile.role === 'admin') {
       return res;
     }
 
-    // Determine expiration date
     let expiryMs;
     if (profile.access_expires_at) {
       expiryMs = new Date(profile.access_expires_at).getTime();
@@ -85,14 +96,12 @@ export async function middleware(req) {
       expiryMs = createdAtMs + 7 * 24 * 60 * 60 * 1000;
     }
 
-    const isTrialExpired = Date.now() >= expiryMs && !profile.is_premium;
-    const isFrozen = Boolean(profile.is_frozen || isTrialExpired);
+    const hasPremium = Boolean(profile.is_premium);
+    const isTrialExpired = Date.now() >= expiryMs && !hasPremium;
+    const isFrozen = !hasPremium && Boolean(profile.is_frozen || isTrialExpired);
 
-    // If account is frozen or 7-day trial is over:
     if (isFrozen) {
-      // Allowed only on home and pricing
       const isAllowedForFrozenUser = pathname === '/' || pathname.startsWith('/pricing');
-
       if (!isAllowedForFrozenUser) {
         const pricingUrl = req.nextUrl.clone();
         pricingUrl.pathname = '/pricing';
